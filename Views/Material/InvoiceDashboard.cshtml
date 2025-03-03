@@ -1,0 +1,142 @@
+@model ContentManagementSystem.Models.MaterialViewModel
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        @await Html.PartialAsync("_Sidebar")
+
+        <!-- Main content -->
+        <div class="col-md-10">
+            <div class="container mt-4">
+                <h2>Invoice Dashboard</h2>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="invoiceTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Invoice No</th>
+                                <th>Company</th>
+                                <th>Asset</th>
+                                <th>Vendor</th>
+                                <th>Manufacturer</th>
+                                <th>Bill Date</th>
+                                <th>Received Date</th>
+                                <th>Quantity</th>
+                                <th>Invoice Image</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var invoice in Model.Materials)
+                            {
+                                <tr>
+                                    <td>@invoice.InvoiceNo</td>
+                                    <td>@invoice.Company?.Name</td>
+                                    <td>@(invoice.AssetItem?.Name == "Others" ? invoice.CustomAssetName : invoice.AssetItem?.Name)</td>
+                                    <td>@(invoice.Vendor?.Name == "Others" ? invoice.CustomVendorName : invoice.Vendor?.Name)</td>
+                                    <td>@(invoice.Manufacturer?.Name == "Others" ? invoice.CustomManufacturerName : invoice.Manufacturer?.Name)</td>
+                                    <td>@invoice.BillDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@invoice.RecordDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@invoice.MaterialItems?.Count</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(invoice.ImagePath))
+                                        {
+                                            <a href="#" class="view-invoice" data-image="@invoice.ImagePath" data-invoice="@invoice.InvoiceNo">
+                                                <img src="@invoice.ImagePath" alt="Invoice" class="img-thumbnail" style="max-width: 50px;" />
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span>No image</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info view-details" data-id="@invoice.Id">
+                                            <i class="fas fa-eye"></i> View
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for displaying invoice image -->
+<div class="modal fade" id="invoiceImageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Invoice Image</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImage" src="" alt="Invoice" class="img-fluid" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function geturl(){
+            let url =window.location.hostname;
+            if(url=='localhost'){
+                return '';
+            }
+            else
+            return '/itinventory';
+        }
+        let myurl=geturl();
+        $(document).ready(function() {
+            // Initialize DataTable
+            $('#invoiceTable').DataTable({
+                order: [[5, 'desc']], // Sort by bill date descending
+                pageLength: 25,
+                language: {
+                    search: "Search invoices:"
+                }
+            });
+
+            // Handle invoice image click
+            $('.view-invoice').click(function(e) {
+                e.preventDefault();
+                const imagePath = $(this).data('image');
+                const invoiceNo = $(this).data('invoice');
+                
+                $('#modalImage').attr('src', imagePath);
+                $('.modal-title').text('Invoice: ' + invoiceNo);
+                $('#invoiceImageModal').modal('show');
+            });
+
+            // Handle view details click
+            $('.view-details').click(function() {
+                const invoiceId = $(this).data('id');
+                window.location.href = myurl+`/Material/InvoiceDetails/${invoiceId}`;
+            });
+        });
+    </script>
+}
+
+<style>
+    .img-thumbnail {
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .img-thumbnail:hover {
+        transform: scale(1.1);
+    }
+
+    #modalImage {
+        max-height: 80vh;
+    }
+
+    .modal-body {
+        padding: 20px;
+        background-color: #f8f9fa;
+    }
+</style> 

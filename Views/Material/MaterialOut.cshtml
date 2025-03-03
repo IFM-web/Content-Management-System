@@ -1,0 +1,583 @@
+@model ContentManagementSystem.Models.MaterialOutViewModel
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        @await Html.PartialAsync("_Sidebar")
+
+        <!-- Main content -->
+        <div class="col-md-10">
+            <div class="container mt-4">
+                <h3>Asset Assignment to Employee</h3>
+
+                @using (Html.BeginForm("CreateMaterialOut", "Material", FormMethod.Post, new { id = "materialOutForm", onsubmit = "return validateForm()" }))
+                {
+                    @Html.AntiForgeryToken()
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                @Html.LabelFor(m => m.CompanyId, "Company", new { @class = "form-label" })
+                                @Html.DropDownListFor(m => m.CompanyId, 
+                                    (SelectList)ViewBag.Companies, 
+                                    new { 
+                                        @class = "form-control", 
+                                        required = "required",
+                                        data_default = "1"
+                                    })
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                @Html.LabelFor(m => m.BranchId, "Branch", new { @class = "form-label" })
+                                <select id="branchSelect" class="form-control select2" name="BranchName" required>
+                                    <option value="">Select or Enter Branch</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                @Html.LabelFor(m => m.EmployeeId, "Employee ID", new { @class = "form-label" })
+                                <select id="employeeSelect" class="form-control select2" name="EmployeeId" required>
+                                    <option value="">Select or Enter Employee ID</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                @Html.LabelFor(m => m.EmployeeName, "Employee Name", new { @class = "form-label" })
+                                <input type="text" id="EmployeeName" name="EmployeeName" class="form-control" required readonly
+                                       placeholder="Employee Name" />
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                @Html.LabelFor(m => m.Department, "Department", new { @class = "form-label" })
+                                <input type="text" id="Department" name="Department" class="form-control" required readonly
+                                       placeholder="Department" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                @Html.LabelFor(m => m.EmailId, "Email ID", new { @class = "form-label" })
+                                <input type="email" id="EmailId" name="EmailId" class="form-control" required readonly
+                                       placeholder="Email ID" />
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                @Html.LabelFor(m => m.PhoneNo, "Phone Number", new { @class = "form-label" })
+                                <input type="text" id="PhoneNo" name="PhoneNo" class="form-control" required readonly
+                                       placeholder="Phone Number" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                @Html.LabelFor(m => m.IssuanceDate, "Issuance Date", new { @class = "form-label" })
+                                @Html.TextBoxFor(m => m.IssuanceDate, new { @class = "form-control", type = "date", required = "required" })
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <div class="form-group mb-3">
+                                @Html.LabelFor(m => m.Remarks, "Remarks", new { @class = "form-label" })
+                                @Html.TextAreaFor(m => m.Remarks, new { @class = "form-control", rows = "3" })
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive mt-4">
+                        <table class="table table-bordered" id="itemsTable">
+                            <thead>
+                                <tr>
+                                    <th>Asset</th>
+                                    <th>Serial No</th>
+                                    <th>Model No</th>
+                                    <th class="computer-column">Generation</th>
+                                    <th class="computer-column">CPU (GB)</th>
+                                    <th class="computer-column">RAM (GB)</th>
+                                    <th class="computer-column">HDD (GB)</th>
+                                    <th class="computer-column">SSD (GB)</th>
+                                    <th class="computer-column">Windows Key</th>
+                                    <th class="computer-column">MS Office Key</th>
+                                    <th>Warranty Date</th>
+                                    <th>Other Details</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsTableBody">
+                                <tr>
+                                    <td>
+                                        @Html.DropDownList("AssetId", (SelectList)ViewBag.Assets, "Select Asset", new { @class = "form-control asset-select", required = "required" })
+                                    </td>
+                                    <td>
+                                        <select class="form-control serialno-select" name="serialno-select" required>
+                                            <option></option>
+                                        </select>
+                                    </td>
+                                    <td class="model-no-cell"></td>
+                                    <td class="generation-cell computer-column"></td>
+                                    <td class="cpu-cell computer-column"></td>
+                                    <td class="ram-cell computer-column"></td>
+                                    <td class="hdd-cell computer-column"></td>
+                                    <td class="ssd-cell computer-column"></td>
+                                    <td class="computer-column">
+                                        <input type="text" class="form-control windows-key" name="windows-key" />
+                                    </td>
+                                    <td class="computer-column">
+                                        <input type="text" class="form-control msoffice-key" name="msoffice-key" />
+                                    </td>
+                                    <td class="warranty-date-cell"></td>
+                                    <td class="other-details-cell"></td>
+                                    <td>
+                                        <button type="button" class="btn btn-danger btn-sm remove-row">Remove</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn btn-secondary" onclick="addNewRow()">Add More Items</button>
+                    </div>
+
+                    <div class="text-end mt-3">
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                        <a href="@Url.Action("Index", "Material")" class="btn btn-secondary">Cancel</a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <script>
+
+        function geturl(){
+            let url =window.location.hostname;
+            if(url=='localhost'){
+                return '';
+            }
+            else
+            return '/itinventory';
+        }
+        let myurl=geturl();
+        $(document).ready(function() {
+            // Initialize Select2 for employee dropdown
+            $('#employeeSelect').select2({
+                ajax: {
+                    url: myurl+'/Material/GetEmployeesList',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            search: params.term || ''
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: data
+                        };
+                    }
+                },
+                minimumInputLength: 1,
+                placeholder: 'Search or Enter Employee ID',
+                tags: true,
+                createTag: function(params) {
+                    return {
+                        id: params.term,
+                        text: params.term,
+                        newTag: true
+                    };
+                },
+                templateResult: function(data) {
+                    if (data.newTag) {
+                        return $('<span><i class="fas fa-plus"></i> Create new employee: ' + data.text + '</span>');
+                    }
+                    return data.text;
+                }
+            }).on('select2:select', function(e) {
+                const data = e.params.data;
+                
+                if (data.newTag) {
+                    // Enable fields for new employee
+                    $('#EmployeeName, #Department, #EmailId, #PhoneNo').prop('readonly', false).val('');
+                    toastr.info('Please fill in the employee details');
+                } else {
+                    // Fill in existing employee details
+                    $('#EmployeeName').val(data.name);
+                    $('#Department').val(data.department);
+                    $('#EmailId').val(data.email);
+                    $('#PhoneNo').val(data.phoneNo);
+                    $('#EmployeeName, #Department, #EmailId, #PhoneNo').prop('readonly', true);
+                }
+            });
+
+            // Initialize first row
+            initializeRowEvents($('#itemsTableBody tr:first'));
+
+            // Initialize Select2 for branch dropdown
+            $('#branchSelect').select2({
+                ajax: {
+                    url: myurl+'/Material/GetBranches',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            search: params.term || '',
+                            companyId: $('#CompanyId').val()
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: data
+                        };
+                    }
+                },
+                minimumInputLength: 0,
+                placeholder: 'Select or Enter Branch',
+                tags: true,
+                createTag: function(params) {
+                    return {
+                        id: 'new:' + params.term,
+                        text: params.term,
+                        newTag: true
+                    };
+                },
+                templateResult: function(data) {
+                    if (data.newTag) {
+                        return $('<span><i class="fas fa-plus"></i> Create new branch: ' + data.text + '</span>');
+                    }
+                    return data.text;
+                }
+            });
+
+            // Load initial branches
+            var initialBranches = @Html.Raw(Json.Serialize(ViewBag.InitialBranches));
+            if (initialBranches && initialBranches.length > 0) {
+                initialBranches.forEach(function(branch) {
+                    var option = new Option(branch.text, branch.id, false, false);
+                    $('#branchSelect').append(option);
+                });
+            }
+
+            // Company change event
+            $('#CompanyId').change(function() {
+                const companyId = $(this).val();
+                const branchSelect = $('#branchSelect');
+                
+                // Clear current selection
+                branchSelect.val(null).trigger('change');
+                
+                // Load branches for selected company
+                $.ajax({
+                    url: myurl + '/Material/GetBranches',
+                    data: { companyId: companyId },
+                    success: function(data) {
+                        // Clear existing options
+                        branchSelect.empty();
+                        
+                        // Add placeholder
+                        branchSelect.append(new Option('Select or Enter Branch', '', true, true));
+                        
+                        // Add retrieved branches
+                        data.forEach(function(branch) {
+                            branchSelect.append(new Option(branch.text, branch.id, false, false));
+                        });
+                        
+                        branchSelect.trigger('change');
+                    }
+                });
+            });
+
+            // Trigger initial company change if there's a pre-selected value
+            if ($('#CompanyId').val()) {
+                $('#CompanyId').trigger('change');
+            }
+
+            // Phone number validation
+            $('#PhoneNo').on('input', function() {
+                let phoneNo = $(this).val();
+                
+                // Remove any non-numeric characters
+                phoneNo = phoneNo.replace(/\D/g, '');
+                
+                // Limit to 10 digits
+                if (phoneNo.length > 10) {
+                    phoneNo = phoneNo.substring(0, 10);
+                }
+                
+                $(this).val(phoneNo);
+                
+                // Validate length
+                if (phoneNo.length === 10) {
+                    $(this).removeClass('is-invalid').addClass('is-valid');
+                    $(this).next('.invalid-feedback').hide();
+                } else {
+                    $(this).removeClass('is-valid').addClass('is-invalid');
+                    $(this).next('.invalid-feedback').show();
+                }
+            });
+        });
+
+        function initializeRowEvents(row) {
+            const assetSelect = row.find('.asset-select');
+            const serialNoSelect = row.find('.serialno-select');
+            
+            // Initialize Select2 for serial number dropdown
+            serialNoSelect.select2({
+                tags: true,
+                width: '100%',
+                ajax: {
+                    url: myurl + '/Material/GetAvailableSerialNumbers',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            assetId: assetSelect.val(),
+                            search: params.term || ''
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: data.map(item => ({
+                                id: item.serialNo,
+                                text: item.serialNo,
+                                modelNo: item.modelNo,
+                                generation: item.generation,
+                                cpuCapacity: item.cpuCapacity,
+                                ramCapacity: item.ramCapacity,
+                                hardDisk: item.hardDisk,
+                                ssdCapacity: item.ssdCapacity,
+                                windowsKey: item.windowsKey,
+                                msOfficeKey: item.msOfficeKey,
+                                warrantyDate: item.warrantyDate,
+                                other: item.other
+                            }))
+                        };
+                    }
+                },
+                placeholder: 'Search or enter serial number',
+                allowClear: true
+            });
+
+            // Asset selection change
+            assetSelect.change(function() {
+                const selectedAsset = $(this).find('option:selected').text();
+                const isComputerAsset = ['Desktop', 'Laptop', 'Server'].includes(selectedAsset);
+                
+                // Toggle computer-specific columns
+                row.closest('table').find('th.computer-column').toggle(isComputerAsset);
+                row.find('td.computer-column').toggle(isComputerAsset);
+                
+                // Add/remove class for CSS control
+                row.toggleClass('computer-asset', isComputerAsset);
+                
+                // Clear and reload serial numbers
+                serialNoSelect.val(null).trigger('change');
+                
+                // Clear all cells
+                row.find('td[class$="-cell"]').text('');
+            });
+
+            // Serial number selection change
+            serialNoSelect.on('select2:select', function(e) {
+                const data = e.params.data;
+                const selectedAsset = assetSelect.find('option:selected').text();
+                const isComputerAsset = ['Desktop', 'Laptop', 'Server'].includes(selectedAsset);
+                
+                // Always display these fields
+                row.find('.model-no-cell').text(data.modelNo || '');
+                row.find('.warranty-date-cell').text(data.warrantyDate || '');
+                row.find('.other-details-cell').text(data.other || '');
+                
+                if (isComputerAsset) {
+                    // Auto-fill computer-specific fields
+                    row.find('.generation-cell').text(data.generation || '');
+                    row.find('.cpu-cell').text(data.cpuCapacity || '');
+                    row.find('.ram-cell').text(data.ramCapacity || '');
+                    row.find('.hdd-cell').text(data.hardDisk || '');
+                    row.find('.ssd-cell').text(data.ssdCapacity || '');
+                    row.find('.windows-key').val(data.windowsKey || '');
+                    row.find('.msoffice-key').val(data.msOfficeKey || '');
+                }
+            });
+
+            // Remove row
+            row.find('.remove-row').click(function() {
+                if ($('#itemsTableBody tr').length > 1) {
+                    row.remove();
+                }
+            });
+        }
+
+        function addNewRow() {
+            const newRow = $('#itemsTableBody tr:first').clone();
+            newRow.find('input, select').val('');
+            
+            // Reset Select2
+            newRow.find('.select2-container').remove();
+            
+            // Clear text cells
+            newRow.find('td[class$="-cell"]').text('');
+            
+            // Reset input fields
+            newRow.find('.windows-key, .msoffice-key').val('');
+            
+            $('#itemsTableBody').append(newRow);
+            initializeRowEvents(newRow);
+        }
+
+        function validateForm() {
+            let isValid = true;
+            
+            // Validate required fields
+            $('#materialOutForm input[required], #materialOutForm select[required]').each(function() {
+                if (!$(this).val()) {
+                    isValid = false;
+                    $(this).addClass('is-invalid');
+                    toastr.error(`${$(this).closest('.form-group').find('label').text()} is required`);
+                } else {
+                    $(this).removeClass('is-invalid');
+                }
+            });
+
+            // Phone validation
+            const phoneNo = $('#PhoneNo').val();
+            if (!/^[0-9]{10}$/.test(phoneNo)) {
+                isValid = false;
+                $('#PhoneNo').addClass('is-invalid');
+                toastr.error('Please enter a valid 10-digit phone number');
+            }
+
+            if (!isValid) {
+                toastr.error('Please fill in all required fields');
+                return false;
+            }
+
+            return true;
+        }
+    </script>
+
+    <style>
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .select2-selection {
+            height: 38px !important;
+            padding: 5px !important;
+            border: 1px solid #ced4da !important;
+            border-radius: 0.25rem !important;
+        }
+
+        .select2-selection__arrow {
+            height: 36px !important;
+        }
+
+        .select2-search__field {
+            width: 100% !important;
+        }
+
+        .select2-results__option {
+            padding: 8px !important;
+        }
+
+        .select2-container--default .select2-selection--single {
+            border: 1px solid #ced4da !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 26px !important;
+        }
+
+        select:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
+
+        .loading-select {
+            position: relative;
+        }
+
+        .loading-select::after {
+            content: "Loading...";
+            position: absolute;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .branch-select-container {
+            position: relative;
+        }
+
+        .branch-select-container .select2-container {
+            width: 100% !important;
+        }
+
+        .branch-select-container .select2-selection {
+            height: 38px !important;
+            padding: 5px !important;
+            border: 1px solid #ced4da !important;
+            border-radius: 0.25rem !important;
+        }
+
+        .branch-select-container .select2-selection__arrow {
+            height: 36px !important;
+        }
+
+        .branch-select-container .select2-selection__placeholder {
+            color: #6c757d;
+        }
+
+        .branch-select-container .select2-selection__rendered {
+            line-height: 26px !important;
+        }
+
+        .branch-select-container .input-group .btn {
+            border-color: #ced4da;
+        }
+
+        .branch-select-container .input-group .btn:hover {
+            background-color: #e9ecef;
+        }
+
+        #customBranch {
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+            padding: 0.375rem 0.75rem;
+        }
+
+        .is-invalid {
+            border-color: #dc3545;
+            padding-right: calc(1.5em + 0.75rem);
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+
+        .is-valid {
+            border-color: #198754;
+            padding-right: calc(1.5em + 0.75rem);
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+
+        .computer-column {
+            display: none;
+        }
+
+        .computer-asset .computer-column {
+            display: table-cell;
+        }
+    </style>
+} 

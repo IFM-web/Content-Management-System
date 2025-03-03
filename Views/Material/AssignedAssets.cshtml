@@ -1,0 +1,92 @@
+@model ContentManagementSystem.Models.AssignedAssetsViewModel
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        @await Html.PartialAsync("_Sidebar")
+
+        <!-- Main content -->
+        <div class="col-md-10">
+            <div class="container mt-4">
+                <h2>Assigned Assets</h2>
+
+                <div class="table-responsive mt-4">
+                    <table class="table table-bordered table-hover" id="assignedAssetsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Issuance Date</th>
+                                <th>Company</th>
+                                <th>Branch</th>
+                                <th>Employee ID</th>
+                                <th>Employee Name</th>
+                                <th>Department</th>
+                                <th>Asset</th>
+                                <th>Serial No</th>
+                                <th>Model No</th>
+                                <th>Warranty Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var asset in Model.AssignedAssets)
+                            {
+                                <tr>
+                                    <td>@asset.IssuanceDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@asset.CompanyName</td>
+                                    <td>@asset.BranchName</td>
+                                    <td>@asset.EmployeeId</td>
+                                    <td>@asset.EmployeeName</td>
+                                    <td>@asset.Department</td>
+                                    <td>@asset.AssetName</td>
+                                    <td>@asset.SerialNo</td>
+                                    <td>@asset.ModelNo</td>
+                                    <td>@(asset.WarrantyDate?.ToString("dd/MM/yyyy") ?? "-")</td>
+                                    <td>
+                                        <span class="badge bg-success">@asset.Status</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            $('#assignedAssetsTable').DataTable({
+                order: [[0, 'desc']], // Sort by issuance date descending
+                pageLength: 25,
+                language: {
+                    search: "Search assigned assets:"
+                }
+            });
+        });
+    </script>
+}
+
+<style>
+    .nav-link.active {
+        background-color: #0d6efd !important;
+        color: white !important;
+    }
+
+    .accordion-toggle {
+        cursor: pointer;
+    }
+
+    .accordion-toggle:hover {
+        background-color: #f8f9fa;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(0,0,0,.075);
+    }
+</style> 

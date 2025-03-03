@@ -1,0 +1,201 @@
+@model ContentManagementSystem.Models.AvailableStockViewModel
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        @await Html.PartialAsync("_Sidebar")
+
+        <!-- Main content -->
+        <div class="col-md-10">
+            <div class="container mt-4">
+                <h2>Available Stock</h2>
+
+                <!-- Search Form -->
+                @using (Html.BeginForm("AvailableStock", "Material", FormMethod.Get))
+                {
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <input type="text" name="searchTerm" class="form-control" placeholder="Search..." value="@Model.SearchTerm" />
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <input type="text" 
+                                       name="receivedDateFrom" 
+                                       class="form-control date-picker" 
+                                       placeholder="From Date"
+                                       value="@(Model.ReceivedDateFrom?.ToString("dd/MM/yyyy"))" 
+                                       autocomplete="off" />
+                                <span class="input-group-text">
+                                    <i class="fas fa-calendar"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <input type="text" 
+                                       name="receivedDateTo" 
+                                       class="form-control date-picker" 
+                                       placeholder="To Date"
+                                       value="@(Model.ReceivedDateTo?.ToString("dd/MM/yyyy"))" 
+                                       autocomplete="off" />
+                                <span class="input-group-text">
+                                    <i class="fas fa-calendar"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary">Search</button>
+                            <a href="@Url.Action("AvailableStock")" class="btn btn-secondary">Reset</a>
+                        </div>
+                    </div>
+                }
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="availableStockTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Invoice No</th>
+                                <th>Asset</th>
+                                <th>Vendor</th>
+                                <th>Manufacturer</th>
+                                <th>Serial No</th>
+                                <th>Model No</th>
+                                <th>Item Details</th>
+                                <th>Warranty Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var material in Model.Materials)
+                            {
+                                foreach (var item in material.MaterialItems)
+                                {
+                                    <tr>
+                                        <td>@material.InvoiceNo</td>
+                                        <td>
+                                            @if (material.AssetItem.Name == "Others")
+                                            {
+                                                @material.CustomAssetName
+                                            }
+                                            else
+                                            {
+                                                @material.AssetItem.Name
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (material.Vendor?.Name == "Others")
+                                            {
+                                                @material.CustomVendorName
+                                            }
+                                            else
+                                            {
+                                                @(material.Vendor?.Name ?? "-")
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (material.Manufacturer?.Name == "Others")
+                                            {
+                                                @material.CustomManufacturerName
+                                            }
+                                            else
+                                            {
+                                                @(material.Manufacturer?.Name ?? "-")
+                                            }
+                                        </td>
+                                        <td>@item.SerialNo</td>
+                                        <td>@item.ModelNo</td>
+                                        <td>
+                                            @if (material.AssetItem.Name == "Others")
+                                            {
+                                                @item.ItemName
+                                                if (!string.IsNullOrEmpty(item.Other))
+                                                {
+                                                    <br/>@item.Other
+                                                }
+                                            }
+                                            else if (material.AssetItem.Name == "Desktop" || material.AssetItem.Name == "Laptop" || material.AssetItem.Name == "Server")
+                                            {
+                                                <span>Gen: @item.Generation</span><br/>
+                                                <span>CPU: @item.CPUCapacity GB</span><br/>
+                                                <span>RAM: @item.RAMCapacity GB</span><br/>
+                                                <span>HDD: @item.HardDisk GB</span>
+                                                @if (item.SSDCapacity > 0)
+                                                {
+                                                    <br/><span>SSD: @item.SSDCapacity GB</span>
+                                                }
+                                                @if (!string.IsNullOrEmpty(item.Other))
+                                                {
+                                                    <br/>@item.Other
+                                                }
+                                            }
+                                        </td>
+                                        <td>@(item.WarrantyDate?.ToString("dd/MM/yyyy") ?? "-")</td>
+                                        <td>
+                                            <span class="badge bg-success">@item.Status</span>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+    <style>
+        .datepicker {
+            z-index: 1060 !important;
+        }
+
+        .input-group-text {
+            cursor: pointer;
+        }
+
+        .input-group-text:hover {
+            background-color: #e9ecef;
+        }
+
+        .datepicker table tr td.today {
+            background-color: #FFF176 !important;
+            border-color: #FFE082 !important;
+        }
+
+        .datepicker table tr td.active {
+            background-color: #007bff !important;
+            border-color: #0056b3 !important;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Initialize datepickers
+            $('input[name="receivedDateFrom"], input[name="receivedDateTo"]').datepicker({
+                format: 'dd/mm/yyyy',
+                autoclose: true,
+                todayHighlight: true,
+                clearBtn: true
+            });
+
+            // Update the search form
+            $('.date-picker').on('changeDate', function() {
+                $(this).datepicker('hide');
+            });
+
+            $('#availableStockTable').DataTable({
+                order: [[0, 'desc']],
+                pageLength: 25,
+                language: {
+                    search: "Search available items:"
+                }
+            });
+        });
+    </script>
+} 
