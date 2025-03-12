@@ -1,6 +1,38 @@
 @model ContentManagementSystem.Models.MaterialOutViewModel
 
 <div class="container-fluid">
+    @if (TempData["Success"] != null)
+    {
+        <div class="card mb-3 border-success">
+            <div class="card-body text-success">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-check-circle me-2 fs-4"></i>
+                    <div>
+                        <h5 class="card-title mb-0">Success!</h5>
+                        <p class="card-text mb-0">@TempData["Success"]</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Please correct the following errors:</strong>
+            <ul>
+                @foreach (var modelState in ViewData.ModelState.Values)
+                {
+                    foreach (var error in modelState.Errors)
+                    {
+                        <li>@error.ErrorMessage</li>
+                    }
+                }
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     <div class="row">
         <!-- Sidebar -->
         @await Html.PartialAsync("_Sidebar")
@@ -10,7 +42,7 @@
             <div class="container mt-4">
                 <h3>Asset Assignment to Employee</h3>
 
-                @using (Html.BeginForm("CreateMaterialOut", "Material", FormMethod.Post, new { id = "materialOutForm", onsubmit = "return validateForm()" }))
+                @using (Html.BeginForm("MaterialOut", "Material", FormMethod.Post, new { id = "materialOutForm", onsubmit = "return validateMaterialOutForm()" }))
                 {
                     @Html.AntiForgeryToken()
                     <div class="row">
@@ -95,11 +127,12 @@
                                     <th>Asset</th>
                                     <th>Serial No</th>
                                     <th>Model No</th>
+                                    <th class="othername">Name</th>
                                     <th class="computer-column">Generation</th>
-                                    <th class="computer-column">CPU (GB)</th>
+                                    <th class="computer-column">Processor</th>
                                     <th class="computer-column">RAM (GB)</th>
-                                    <th class="computer-column">HDD (GB)</th>
-                                    <th class="computer-column">SSD (GB)</th>
+                                    <th class="computer-column">HDD</th>
+                                    <th class="computer-column">SSD</th>
                                     <th class="computer-column">Windows Key</th>
                                     <th class="computer-column">MS Office Key</th>
                                     <th>Warranty Date</th>
@@ -108,26 +141,31 @@
                                 </tr>
                             </thead>
                             <tbody id="itemsTableBody">
+                                @{ var i = 0; }
                                 <tr>
                                     <td>
-                                        @Html.DropDownList("AssetId", (SelectList)ViewBag.Assets, "Select Asset", new { @class = "form-control asset-select", required = "required" })
+                                        @Html.DropDownList("AssetId", 
+                                            (SelectList)ViewBag.AssetItems, 
+                                            "Select Asset", 
+                                            new { @class = "form-control asset-select", required = "required" })
                                     </td>
                                     <td>
-                                        <select class="form-control serialno-select" name="serialno-select" required>
+                                        <select class="form-control serialno-select" name="serialno-select_@i" required>
                                             <option></option>
                                         </select>
                                     </td>
                                     <td class="model-no-cell"></td>
+                                    <td class="othername"></td>
                                     <td class="generation-cell computer-column"></td>
-                                    <td class="cpu-cell computer-column"></td>
+                                    <td class="processor-cell computer-column"></td>
                                     <td class="ram-cell computer-column"></td>
                                     <td class="hdd-cell computer-column"></td>
                                     <td class="ssd-cell computer-column"></td>
                                     <td class="computer-column">
-                                        <input type="text" class="form-control windows-key" name="windows-key" />
+                                        <input type="text" class="form-control windows-key" name="WindowsKey" />
                                     </td>
                                     <td class="computer-column">
-                                        <input type="text" class="form-control msoffice-key" name="msoffice-key" />
+                                        <input type="text" class="form-control msoffice-key" name="MSOfficeKey" />
                                     </td>
                                     <td class="warranty-date-cell"></td>
                                     <td class="other-details-cell"></td>
@@ -141,7 +179,9 @@
                     </div>
 
                     <div class="text-end mt-3">
-                        <button type="submit" class="btn btn-primary">Submit</button>
+                        <button type="submit" class="btn btn-primary" id="submitButton">
+                            Submit
+                        </button>
                         <a href="@Url.Action("Index", "Material")" class="btn btn-secondary">Cancel</a>
                     </div>
                 }
@@ -153,6 +193,10 @@
 @section Scripts {
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     
     <script>
 
@@ -321,6 +365,11 @@
                     $(this).next('.invalid-feedback').show();
                 }
             });
+
+            // Auto-hide success message card after 5 seconds
+            setTimeout(function() {
+                $('.card.border-success').fadeOut('slow');
+            }, 5000);
         });
 
         function initializeRowEvents(row) {
@@ -348,7 +397,7 @@
                                 text: item.serialNo,
                                 modelNo: item.modelNo,
                                 generation: item.generation,
-                                cpuCapacity: item.cpuCapacity,
+                                processor: item.processor,
                                 ramCapacity: item.ramCapacity,
                                 hardDisk: item.hardDisk,
                                 ssdCapacity: item.ssdCapacity,
@@ -365,7 +414,9 @@
             });
 
             // Asset selection change
+
             assetSelect.change(function() {
+               
                 const selectedAsset = $(this).find('option:selected').text();
                 const isComputerAsset = ['Desktop', 'Laptop', 'Server'].includes(selectedAsset);
                 
@@ -389,15 +440,18 @@
                 const selectedAsset = assetSelect.find('option:selected').text();
                 const isComputerAsset = ['Desktop', 'Laptop', 'Server'].includes(selectedAsset);
                 
+                // Format warranty date to show only date
+                const formattedWarrantyDate = data.warrantyDate ? new Date(data.warrantyDate).toLocaleDateString('en-GB') : '';
+                
                 // Always display these fields
                 row.find('.model-no-cell').text(data.modelNo || '');
-                row.find('.warranty-date-cell').text(data.warrantyDate || '');
+                row.find('.warranty-date-cell').text(formattedWarrantyDate);
                 row.find('.other-details-cell').text(data.other || '');
                 
                 if (isComputerAsset) {
                     // Auto-fill computer-specific fields
                     row.find('.generation-cell').text(data.generation || '');
-                    row.find('.cpu-cell').text(data.cpuCapacity || '');
+                    row.find('.processor-cell').text(data.processor || '');
                     row.find('.ram-cell').text(data.ramCapacity || '');
                     row.find('.hdd-cell').text(data.hardDisk || '');
                     row.find('.ssd-cell').text(data.ssdCapacity || '');
@@ -415,6 +469,7 @@
         }
 
         function addNewRow() {
+            const rowCount = $('#itemsTableBody tr').length;
             const newRow = $('#itemsTableBody tr:first').clone();
             newRow.find('input, select').val('');
             
@@ -424,41 +479,119 @@
             // Clear text cells
             newRow.find('td[class$="-cell"]').text('');
             
-            // Reset input fields
-            newRow.find('.windows-key, .msoffice-key').val('');
-            
             $('#itemsTableBody').append(newRow);
             initializeRowEvents(newRow);
         }
 
-        function validateForm() {
+        function validateMaterialOutForm() {
             let isValid = true;
-            
-            // Validate required fields
-            $('#materialOutForm input[required], #materialOutForm select[required]').each(function() {
-                if (!$(this).val()) {
+            const errors = [];
+
+            // Validate Company
+            if (!$('#CompanyId').val()) {
+                errors.push('Please select a Company');
+                $('#CompanyId').addClass('is-invalid');
+                isValid = false;
+            }
+
+            // Validate Branch
+            if (!$('#branchSelect').val()) {
+                errors.push('Please select or enter a Branch');
+                $('#branchSelect').addClass('is-invalid');
+                isValid = false;
+            }
+
+            // Validate Employee
+            if (!$('#employeeSelect').val()) {
+                errors.push('Please select or enter an Employee ID');
+                $('#employeeSelect').addClass('is-invalid');
+                isValid = false;
+            }
+
+            // Validate Employee Details
+            const requiredFields = [
+                { id: 'EmployeeName', label: 'Employee Name' },
+                { id: 'Department', label: 'Department' },
+                { id: 'EmailId', label: 'Email ID' },
+                { id: 'PhoneNo', label: 'Phone Number' }
+            ];
+
+            requiredFields.forEach(field => {
+                const value = $(`#${field.id}`).val();
+                if (!value || value.trim() === '') {
+                    errors.push(`${field.label} is required`);
+                    $(`#${field.id}`).addClass('is-invalid');
                     isValid = false;
-                    $(this).addClass('is-invalid');
-                    toastr.error(`${$(this).closest('.form-group').find('label').text()} is required`);
-                } else {
-                    $(this).removeClass('is-invalid');
                 }
             });
 
-            // Phone validation
-            const phoneNo = $('#PhoneNo').val();
-            if (!/^[0-9]{10}$/.test(phoneNo)) {
-                isValid = false;
+            // Validate Phone Number (10 digits)
+            const phoneValue = $('#PhoneNo').val();
+            if (phoneValue && phoneValue.length !== 10) {
+                errors.push('Phone number must be 10 digits');
                 $('#PhoneNo').addClass('is-invalid');
-                toastr.error('Please enter a valid 10-digit phone number');
+                isValid = false;
+            } else {
+                $('#PhoneNo').removeClass('is-invalid').addClass('is-valid');
             }
 
+            // Validate Issuance Date
+            if (!$('#IssuanceDate').val()) {
+                errors.push('Please select an Issuance Date');
+                $('#IssuanceDate').addClass('is-invalid');
+                isValid = false;
+            }
+
+            // Validate Items Table
+            let hasItems = false;
+            $('#itemsTableBody tr').each(function() {
+                const assetSelect = $(this).find('.asset-select');
+                const serialNoSelect = $(this).find('.serialno-select');
+                
+                if (assetSelect.val() || serialNoSelect.val()) {
+                    hasItems = true;
+                    
+                    if (!assetSelect.val()) {
+                        errors.push('Please select an Asset for all rows');
+                        assetSelect.addClass('is-invalid');
+                        isValid = false;
+                    }
+                    
+                    if (!serialNoSelect.val()) {
+                        errors.push('Please select a Serial Number for all rows');
+                        serialNoSelect.addClass('is-invalid');
+                        isValid = false;
+                    }
+                }
+            });
+
+            if (!hasItems) {
+                errors.push('Please add at least one item');
+                isValid = false;
+            }
+
+            // Show validation messages
             if (!isValid) {
-                toastr.error('Please fill in all required fields');
+                errors.forEach(error => toastr.error(error));
                 return false;
             }
 
-            return true;
+            // If form is valid, show confirmation and submit
+            if (isValid) {
+                Swal.fire({
+                    title: 'Processing...',
+                    text: 'Assigning assets to employee',
+                    icon: 'info',
+                    showConfirmButton: false,
+                    timer: 2000,
+                    willClose: () => {
+                        document.getElementById('materialOutForm').submit();
+                    }
+                });
+                return false; // Prevent default form submission
+            }
+
+            return false;
         }
     </script>
 
@@ -572,12 +705,32 @@
             background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
         }
 
+        .invalid-feedback {
+            display: block;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.875em;
+            color: #dc3545;
+        }
+
         .computer-column {
             display: none;
         }
 
         .computer-asset .computer-column {
             display: table-cell;
+        }
+
+        .card.border-success {
+            border-width: 2px;
+        }
+
+        .card.border-success .card-body {
+            padding: 1rem;
+        }
+
+        .text-success {
+            color: #198754 !important;
         }
     </style>
 } 

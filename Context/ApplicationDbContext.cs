@@ -63,9 +63,9 @@ namespace ContentManagementSystem.Context
 
             // Seed Branch data (after Company)
             modelBuilder.Entity<Branch>().HasData(
-                new Branch { Id = 1, Name = "Main Branch", CompanyId = 1 },
-                new Branch { Id = 2, Name = "North Branch", CompanyId = 1 },
-                new Branch { Id = 3, Name = "South Branch", CompanyId = 1 }
+                new Branch { Id = 1, Name = " ", CompanyId = 1 },
+                new Branch { Id = 2, Name = " ", CompanyId = 1 },
+                new Branch { Id = 3, Name = " ", CompanyId = 1 }
             );
 
             // Configure relationships

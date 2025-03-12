@@ -4,14 +4,16 @@ using ContentManagementSystem.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace ContentManagementSystem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250304062525_UpdateCPUCapacityToFloat")]
+    partial class UpdateCPUCapacityToFloat
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -81,19 +83,19 @@ namespace ContentManagementSystem.Migrations
                         {
                             Id = 1,
                             CompanyId = 1,
-                            Name = " "
+                            Name = "Main Branch"
                         },
                         new
                         {
                             Id = 2,
                             CompanyId = 1,
-                            Name = " "
+                            Name = "North Branch"
                         },
                         new
                         {
                             Id = 3,
                             CompanyId = 1,
-                            Name = " "
+                            Name = "South Branch"
                         });
                 });
 
@@ -264,12 +266,14 @@ namespace ContentManagementSystem.Migrations
                     b.Property<int>("AssetItemId")
                         .HasColumnType("int");
 
+                    b.Property<float?>("CPUCapacity")
+                        .HasColumnType("real");
+
                     b.Property<string>("Generation")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("HardDisk")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                    b.Property<int?>("HardDisk")
+                        .HasColumnType("int");
 
                     b.Property<string>("ItemName")
                         .HasColumnType("nvarchar(max)");
@@ -287,20 +291,15 @@ namespace ContentManagementSystem.Migrations
                     b.Property<string>("Other")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Processor")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.Property<int?>("RAMCapacity")
                         .HasColumnType("int");
 
-                    b.Property<string>("SSDCapacity")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                    b.Property<int?>("SSDCapacity")
+                        .HasColumnType("int");
 
                     b.Property<string>("SerialNo")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Status")
                         .HasColumnType("nvarchar(max)");
@@ -316,9 +315,6 @@ namespace ContentManagementSystem.Migrations
                     b.HasIndex("AssetItemId");
 
                     b.HasIndex("MaterialId");
-
-                    b.HasIndex("SerialNo")
-                        .IsUnique();
 
                     b.ToTable("MaterialItems");
                 });

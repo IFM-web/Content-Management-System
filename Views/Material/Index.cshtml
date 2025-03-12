@@ -1,5 +1,34 @@
 @model ContentManagementSystem.Models.MaterialViewModel
 
+@{
+  ///  var urlBase = "https://yourdomain.com/api/"; // Set your base URL for API calls here
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Error!</strong> @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Please correct the following errors:</strong>
+        <ul>
+            @foreach (var modelState in ViewData.ModelState.Values)
+            {
+                foreach (var error in modelState.Errors)
+                {
+                    <li>@error.ErrorMessage</li>
+                }
+            }
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
@@ -34,7 +63,10 @@
                             </div>
                             <div class="form-group mb-3">
                                 @Html.LabelFor(m => m.NewMaterial.AssetItemId, "Asset Item", new { @class = "form-label" })
-                                @Html.DropDownListFor(m => m.NewMaterial.AssetItemId, (SelectList)ViewBag.AssetItems, "Select Asset Item", new { @class = "form-control", required = "required" })
+                                @Html.DropDownListFor(m => m.NewMaterial.AssetItemId, 
+                                    (SelectList)ViewBag.AssetItems, 
+                                    "Select Asset",
+                                    new { @class = "form-control", required = "required" })
                                 @Html.ValidationMessageFor(m => m.NewMaterial.AssetItemId, "", new { @class = "text-danger" })
                             </div>
                             <div id="customAssetNameDiv" style="display:none;" class="form-group mb-3">
@@ -42,13 +74,13 @@
                                 <input type="text" class="form-control" name="NewMaterial.CustomAssetName" id="customAssetName" placeholder="Optional" />
                             </div>
                             <div class="form-group mb-3">
-                                @Html.LabelFor(m => m.NewMaterial.VendorId, "Vendor", new { @class = "form-label" })
-                                @Html.DropDownListFor(m => m.NewMaterial.VendorId, (SelectList)ViewBag.Vendors, "Select Vendor", new { @class = "form-control", required = "required" })
-                                @Html.ValidationMessageFor(m => m.NewMaterial.VendorId, "", new { @class = "text-danger" })
-                            </div>
-                            <div id="customVendorNameDiv" style="display:none;" class="form-group mb-3">
-                                <label class="form-label">Custom Vendor Name</label>
-                                <input type="text" class="form-control" name="NewMaterial.CustomVendorName" id="customVendorName" placeholder="Enter Vendor Name" />
+                                @Html.LabelFor(m => m.NewMaterial.CustomVendorName, "Vendor", new { @class = "form-label" })
+                                @Html.TextBoxFor(m => m.NewMaterial.CustomVendorName, new { 
+                                    @class = "form-control", 
+                                    placeholder = "Enter Vendor Name",
+                                    required = "required"
+                                })
+                                @Html.ValidationMessageFor(m => m.NewMaterial.CustomVendorName, "", new { @class = "text-danger" })
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -124,21 +156,22 @@
                                     <th id="thWarrantyDate">Warranty Date</th>
                                     <th>Model No</th>
                                     <th id="thGeneration" style="display:none;">Generation</th>
-                                    <th id="thCPU" style="display:none;">CPU Capacity (GB)</th>
-                                    <th id="thHDD" style="display:none;">Hard Disk (GB)</th>
+                                    <th id="thProcessor" style="display:none;">Processor</th>
                                     <th id="thRAM" style="display:none;">RAM (GB)</th>
-                                    <th id="thSSD" style="display:none;">SSD (GB)</th>
+                                    <th id="thHDD" style="display:none;">Hard Disk</th>
+                                    <th id="thSSD" style="display:none;">SSD</th>
                                     <th id="thOther" style="display:none;">Other</th>
                                 </tr>
                             </thead>
                             <tbody id="itemsTableBody">
                             </tbody>
                         </table>
+
                     </div>
 
                     <div class="text-end">
                         <button type="submit" class="btn btn-primary">Submit</button>
-                        @* <a href="@Url.Action("InvoiceDashboard", "Material")" class="btn btn-secondary">View All Invoices</a> *@
+                        @* <a href="@Url.Action("InvoiceRecord", "Material")" class="btn btn-secondary">View All Invoices</a> *@
                     </div>
                 }
             </div>
@@ -170,6 +203,62 @@
             background-color: #007bff !important;
             border-color: #0056b3 !important;
         }
+
+        .btn-success {
+            transition: all 0.3s ease;
+        }
+
+        #imagePreview {
+            transition: all 0.3s ease;
+        }
+
+        .img-thumbnail {
+            border: 2px solid #28a745;
+        }
+
+        #fileName {
+            font-size: 0.875rem;
+        }
+
+        .storage-input.is-valid {
+            background-image: url("data:image/svg+xml,..."); /* Your existing valid icon */
+            border-color: #198754;
+        }
+        
+        .storage-input.is-invalid {
+            background-image: url("data:image/svg+xml,..."); /* Your existing invalid icon */
+            border-color: #dc3545;
+        }
+        
+        .storage-input:focus {
+            box-shadow: none;
+        }
+
+        .is-invalid {
+            border-color: #dc3545;
+            padding-right: calc(1.5em + 0.75rem);
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+
+        .invalid-feedback {
+            display: block;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.875em;
+            color: #dc3545;
+        }
+
+        .alert {
+            margin-bottom: 1rem;
+        }
+
+        .alert ul {
+            margin-bottom: 0;
+            padding-left: 1.5rem;
+        }
     </style>
 }
 
@@ -189,7 +278,7 @@
             
             // Show/hide columns based on asset type
             document.getElementById('thGeneration').style.display = isComputerAsset ? '' : 'none';
-            document.getElementById('thCPU').style.display = isComputerAsset ? '' : 'none';
+            document.getElementById('thProcessor').style.display = isComputerAsset ? '' : 'none';
             document.getElementById('thHDD').style.display = isComputerAsset ? '' : 'none';
             document.getElementById('thRAM').style.display = isComputerAsset ? '' : 'none';
             document.getElementById('thSSD').style.display = isComputerAsset ? '' : 'none';
@@ -236,29 +325,42 @@
                                class="form-control"
                                ${isComputerAsset ? 'required' : ''} />
                     </td>
-                    <td id="tdCPU${i}" style="display:${isComputerAsset ? '' : 'none'}">
-                        <input type="number" 
-                               name="NewMaterial.MaterialItems[${i}].CPUCapacity" 
+                    <td id="tdProcessor${i}" style="display:${isComputerAsset ? '' : 'none'}">
+                        <input type="text" 
+                               name="NewMaterial.MaterialItems[${i}].Processor" 
                                class="form-control"
-                               ${isComputerAsset ? 'required' : ''} />
-                    </td>
-                    <td id="tdHDD${i}" style="display:${isComputerAsset ? '' : 'none'}">
-                        <input type="number" 
-                               name="NewMaterial.MaterialItems[${i}].HardDisk" 
-                               class="form-control"
+                               placeholder="Enter Processor"
+                               pattern="[a-zA-Z0-9\s-]+"
+                               title="Processor can only contain letters, numbers, spaces and hyphens"
                                ${isComputerAsset ? 'required' : ''} />
                     </td>
                     <td id="tdRAM${i}" style="display:${isComputerAsset ? '' : 'none'}">
                         <input type="number" 
                                name="NewMaterial.MaterialItems[${i}].RAMCapacity" 
                                class="form-control"
+                               min="1"
+                               max="1024"
+                               step="1"
+                               placeholder="Enter RAM in GB"
+                               ${isComputerAsset ? 'required' : ''} />
+                    </td>
+                    <td id="tdHDD${i}" style="display:${isComputerAsset ? '' : 'none'}">
+                        <input type="text" 
+                               name="NewMaterial.MaterialItems[${i}].HardDisk" 
+                               class="form-control storage-input"
+                               pattern="^\d+(\.\d{1,2})?\s*(GB|TB)$"
+                               placeholder="e.g., 500 GB, 1 TB"
+                               title="Enter size followed by GB or TB (e.g., 500 GB, 1 TB, 2.5 TB)"
                                ${isComputerAsset ? 'required' : ''} />
                     </td>
                     <td id="tdSSD${i}" style="display:${isComputerAsset ? '' : 'none'}">
-                        <input type="number" 
+                        <input type="text" 
                                name="NewMaterial.MaterialItems[${i}].SSDCapacity" 
-                               class="form-control" 
-                               value="0" />
+                               class="form-control storage-input"
+                               pattern="^\d+(\.\d{1,2})?\s*(GB|TB)$"
+                               placeholder="e.g., 500 GB, 1 TB"
+                               title="Enter size followed by GB or TB (e.g., 500 GB, 1 TB, 2.5 TB)"
+                               ${isComputerAsset ? 'required' : ''} />
                     </td>
                     <td>
                         <input type="text" 
@@ -289,6 +391,18 @@
             $('.warranty-date').on('changeDate', function() {
                 $(this).datepicker('hide');
                 validateDate($(this));
+            });
+
+            // Example AJAX call to fetch data
+            $.ajax({
+                url: 'your-endpoint', // Use the base URL here
+                method: 'GET',
+                success: function(data) {
+                    // Handle success
+                },
+                error: function(error) {
+                    // Handle error
+                }
             });
         }
 
@@ -359,20 +473,34 @@
 
         // Add event listener for asset item change
         $(document).ready(function() {
-            $('#NewMaterial_AssetItemId, #NewMaterial_VendorId, #NewMaterial_ManufacturerId').change(function() {
+            $('#NewMaterial_AssetItemId, #NewMaterial_ManufacturerId').change(function() {
                 const assetType = $("#NewMaterial_AssetItemId option:selected").text();
-                const vendorType = $("#NewMaterial_VendorId option:selected").text();
                 const manufacturerType = $("#NewMaterial_ManufacturerId option:selected").text();
                 
                 // Show/hide custom name fields
-                $('#customAssetNameDiv').toggle(assetType === 'Others');
-                $('#customVendorNameDiv').toggle(vendorType === 'Others');
+              //  $('#customAssetNameDiv').toggle(assetType === 'Others');
                 $('#customManufacturerNameDiv').toggle(manufacturerType === 'Others');
                 
                 // Clear and regenerate material items
-                updateTableRows();
+                //updateTableRows();
             });
+
+            $('#NewMaterial_AssetItemId').change(function () {
+                const assetType = $("#NewMaterial_AssetItemId option:selected").text();
+                const manufacturerType = $("#NewMaterial_ManufacturerId option:selected").text();
+
+                // Show/hide custom name fields
+                  $('#customAssetNameDiv').toggle(assetType === 'Others');
+                $('#customManufacturerNameDiv').toggle(manufacturerType === 'Others');
+
+                // Clear and regenerate material items
+                //updateTableRows();
+            });
+
+
         });
+
+
 
         // Add success message handling
         @if (TempData["Success"] != null)
@@ -384,79 +512,127 @@
             </text>
         }
 
-        function validateForm() {
+        function validateSerialNumbers() {
+            const serialNumbers = new Set();
             let isValid = true;
             
-            // Set the quantity value explicitly
-            var quantity = parseInt($('#reqnQuantity').val());
-            if (isNaN(quantity) || quantity < 1) {
-                toastr.error('Quantity must be greater than 0');
-                return false;
-            }
-            
-            // Log form data
-            console.log('Form Data:');
-            console.log('Invoice No:', $('#NewMaterial_InvoiceNo').val());
-            console.log('Company:', $('#NewMaterial_CompanyId').val());
-            console.log('Asset Item:', $('#NewMaterial_AssetItemId').val());
-            console.log('Vendor:', $('#NewMaterial_VendorId').val());
-            console.log('Manufacturer:', $('#NewMaterial_ManufacturerId').val());
-            console.log('Bill Date:', $('#NewMaterial_BillDate').val());
-            console.log('Quantity:', quantity);
-            
-            // Validate required fields
-            $('#materialForm input[required], #materialForm select[required]').each(function() {
-                if (!$(this).val()) {
-                    isValid = false;
-                    $(this).addClass('is-invalid');
-                    toastr.error(`${$(this).attr('placeholder') || $(this).attr('name')} is required`);
-                } else {
-                    $(this).removeClass('is-invalid');
+            $('[name$="SerialNo"]').each(function() {
+                const serialNo = $(this).val().trim();
+                if (serialNo) {
+                    if (serialNumbers.has(serialNo)) {
+                        $(this).addClass('is-invalid');
+                        if (!$(this).next('.invalid-feedback').length) {
+                            $(this).after('<div class="invalid-feedback">Serial number must be unique</div>');
+                        }
+                        isValid = false;
+                        toastr.error('Duplicate serial number found: ' + serialNo);
+                    } else {
+                        serialNumbers.add(serialNo);
+                        $(this).removeClass('is-invalid');
+                        $(this).next('.invalid-feedback').remove();
+                    }
                 }
             });
             
-            // Validate material items
-            $('#itemsTableBody input[required]').each(function() {
-                if (!$(this).val()) {
-                    isValid = false;
-                    $(this).addClass('is-invalid');
-                } else {
-                    $(this).removeClass('is-invalid');
-                }
-            });
-            
-            // Validate warranty dates
-            $('.warranty-date').each(function() {
-                const value = $(this).val();
-                if (value && !validateDate($(this))) {
-                    isValid = false;
-                }
-            });
-            
-            if (!isValid) {
-                toastr.error('Please fill in all required fields');
-                return false;
-            }
-
-            // Set hidden field for quantity before submit
-            $('<input>').attr({
-                type: 'hidden',
-                name: 'NewMaterial.ReqnQuantity',
-                value: quantity
-            }).appendTo('#materialForm');
-            
-            return true;
+            return isValid;
         }
 
-        $('#NewMaterial_VendorId').change(function() {
-            const vendorType = $(this).find("option:selected").text();
-            $('#customVendorNameDiv').toggle(vendorType === 'Others');
-            if (vendorType === 'Others') {
-                $('#customVendorName').prop('required', true);
-            } else {
-                $('#customVendorName').prop('required', false).val('');
+        function validateForm() {
+            let isValid = true;
+            let errors = [];
+
+            // Check if invoice number is provided
+            const invoiceNo = $('#NewMaterial_InvoiceNo').val();
+            if (!invoiceNo) {
+                errors.push('Invoice number is required');
+                $('#NewMaterial_InvoiceNo').addClass('is-invalid');
             }
+
+            // Check if company is selected
+            const companyId = $('#NewMaterial_CompanyId').val();
+            if (!companyId) {
+                errors.push('Please select a company');
+                $('#NewMaterial_CompanyId').addClass('is-invalid');
+            }
+
+            // Check if asset item is selected
+            const assetItemId = $('#NewMaterial_AssetItemId').val();
+            if (!assetItemId) {
+                errors.push('Please select an asset item');
+                $('#NewMaterial_AssetItemId').addClass('is-invalid');
+            }
+
+            // Validate serial numbers
+            const serialNumbers = new Set();
+            $('input[name$=".SerialNo"]').each(function() {
+                const serialNo = $(this).val().trim();
+                if (!serialNo) {
+                    errors.push('Serial number cannot be empty');
+                    $(this).addClass('is-invalid');
+                    isValid = false;
+                } else if (serialNumbers.has(serialNo)) {
+                    errors.push(`Duplicate serial number found: ${serialNo}`);
+                    $(this).addClass('is-invalid');
+                    isValid = false;
+                }
+                serialNumbers.add(serialNo);
+            });
+
+            // Existing storage validation
+            $('.storage-input').each(function() {
+                const value = $(this).val().toUpperCase();
+                if (value && !/^\d+(\.\d{1,2})?\s*(GB|TB)$/.test(value)) {
+                    $(this).addClass('is-invalid');
+                    errors.push(`Invalid storage format: ${value}. Please use format like "500 GB" or "1 TB"`);
+                    isValid = false;
+                }
+            });
+
+            // Show errors if any
+            if (errors.length > 0) {
+                // Show each error as a toastr notification
+                errors.forEach(error => {
+                    toastr.error(error);
+                });
+
+                // Create an error summary
+                const errorHtml = `
+                    <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+                        <strong>Please correct the following errors:</strong>
+                        <ul>
+                            ${errors.map(error => `<li>${error}</li>`).join('')}
+                        </ul>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+
+                // Show error summary at the top of the form
+                $('#materialForm').prepend(errorHtml);
+
+                // Scroll to the top of the form
+                $('html, body').animate({
+                    scrollTop: $('#materialForm').offset().top - 100
+                }, 500);
+
+                return false;
+            }
+
+            return isValid;
+        }
+
+        // Clear validation state when input changes
+        $(document).on('input', '.form-control', function() {
+            $(this).removeClass('is-invalid');
         });
+
+        // Initialize toastr options
+        toastr.options = {
+            closeButton: true,
+            progressBar: true,
+            preventDuplicates: true,
+            positionClass: 'toast-top-right',
+            timeOut: 5000
+        };
 
         $('#NewMaterial_ManufacturerId').change(function() {
             const manufacturerType = $(this).find("option:selected").text();
@@ -482,11 +658,11 @@
         $('#NewMaterial_AssetItemId').change(function () {
             var selectedAsset = $(this).find("option:selected").text();
             if (selectedAsset === "Desktop" || selectedAsset === "Laptop" || selectedAsset === "Server") {
-                $('#thGeneration, #thCPU, #thHDD, #thRAM, #thSSD').show();
+                $('#thGeneration, #thProcessor, #thHDD, #thRAM, #thSSD').show();
                 $('#thItemName').hide();
                 $('#thOther').show();
             } else {
-                $('#thGeneration, #thCPU, #thHDD, #thRAM, #thSSD').hide();
+                $('#thGeneration, #thProcessor, #thHDD, #thRAM, #thSSD').hide();
                 $('#thItemName').show();
                 $('#thOther').show();
             }
@@ -497,7 +673,8 @@
 
         // Handle Invoice Number validation
         $('#NewMaterial_InvoiceNo').on('input', function() {
-            const value = $(this).val();
+            const value = $(this).val().toUpperCase();
+            $(this).val(value);
             const regex = /^[a-zA-Z0-9-_/\s]+$/;
             
             if (!regex.test(value)) {
@@ -509,6 +686,36 @@
                 $(this).removeClass('is-invalid').addClass('is-valid');
                 $(this).next('.invalid-feedback').remove();
             }
+        });
+
+        // Add real-time invoice number availability check
+        $('#NewMaterial_InvoiceNo').on('blur', function() {
+            const invoiceNo = $(this).val().trim();
+            if (!invoiceNo) return;
+
+            $.ajax({
+                url: myurl + '/Material/CheckInvoiceNumber',
+                type: 'GET',
+                data: { invoiceNo: invoiceNo },
+                success: function(response) {
+                    const input = $('#NewMaterial_InvoiceNo');
+                    if (!response.isAvailable) {
+                        input.removeClass('is-valid').addClass('is-invalid');
+                        if (!input.next('.invalid-feedback').length) {
+                            input.after(`<div class="invalid-feedback">${response.message}</div>`);
+                        } else {
+                            input.next('.invalid-feedback').text(response.message);
+                        }
+                        toastr.error(response.message);
+                    } else {
+                        input.removeClass('is-invalid').addClass('is-valid');
+                        input.next('.invalid-feedback').remove();
+                    }
+                },
+                error: function() {
+                    toastr.error('Error checking invoice number availability');
+                }
+            });
         });
 
         // Set max date for Received Date
@@ -671,6 +878,162 @@
                 validateDate($(this));
             });
         });
+
+        // Add this to your existing JavaScript
+        $(document).on('input', '[name$="CPUCapacity"]', function() {
+            let value = this.value;
+            
+            // Remove any characters that aren't numbers or decimal point
+            value = value.replace(/[^\d.]/g, '');
+            
+            // Ensure only one decimal point
+            const parts = value.split('.');
+            if (parts.length > 2) {
+                value = parts[0] + '.' + parts.slice(1).join('');
+            }
+            
+            // Limit to 2 decimal places
+            if (parts.length > 1) {
+                value = parts[0] + '.' + parts[1].slice(0, 2);
+            }
+            
+            this.value = value;
+        });
+
+        // Add real-time validation for serial numbers
+        $(document).on('input', '[name$="SerialNo"]', function() {
+            validateSerialNumbers();
+        });
+
+        // Add this after the existing uploadInvoice function
+        document.getElementById('invoiceUpload').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                // Change the upload button color and text to show success
+                const uploadButton = document.querySelector('button[onclick="uploadInvoice()"]');
+                uploadButton.classList.remove('btn-secondary');
+                uploadButton.classList.add('btn-success');
+                uploadButton.innerHTML = '<i class="fas fa-check"></i> Image Uploaded';
+                
+                // Show the file name
+                const fileName = e.target.files[0].name;
+                if (!document.getElementById('fileName')) {
+                    const fileNameDiv = document.createElement('div');
+                    fileNameDiv.id = 'fileName';
+                    fileNameDiv.className = 'mt-2 text-success';
+                    uploadButton.parentNode.appendChild(fileNameDiv);
+                }
+                document.getElementById('fileName').textContent = 'Selected file: ' + fileName;
+                
+                // Optional: Show preview if it's an image
+                const fileReader = new FileReader();
+                fileReader.onload = function(event) {
+                    if (!document.getElementById('imagePreview')) {
+                        const previewDiv = document.createElement('div');
+                        previewDiv.id = 'imagePreview';
+                        previewDiv.className = 'mt-2';
+                        const previewImg = document.createElement('img');
+                        previewImg.style.maxHeight = '100px';
+                        previewImg.className = 'img-thumbnail';
+                        previewDiv.appendChild(previewImg);
+                        uploadButton.parentNode.appendChild(previewDiv);
+                    }
+                    document.querySelector('#imagePreview img').src = event.target.result;
+                };
+                fileReader.readAsDataURL(e.target.files[0]);
+            }
+        });
+
+        // Add this function to your existing JavaScript
+        function checkSerialNumber(input) {
+            const serialNo = $(input).val().trim();
+            if (!serialNo) return;
+
+            $.ajax({
+                url: myurl + '/Material/CheckSerialNumber',
+                type: 'GET',
+                data: { serialNo: serialNo },
+                success: function(response) {
+                    if (!response.isAvailable) {
+                        $(input).addClass('is-invalid');
+                        if (!$(input).next('.invalid-feedback').length) {
+                            $(input).after(`<div class="invalid-feedback">${response.message}</div>`);
+                        } else {
+                            $(input).next('.invalid-feedback').text(response.message);
+                        }
+                        toastr.error(response.message);
+                    } else {
+                        $(input).removeClass('is-invalid').addClass('is-valid');
+                        $(input).next('.invalid-feedback').remove();
+                    }
+                },
+                error: function() {
+                    toastr.error('Error checking serial number availability');
+                }
+            });
+        }
+
+        // Add this to your existing updateTableRows function
+        $('input[name$="SerialNo"]').on('blur', function() {
+            checkSerialNumber(this);
+        });
+
+        // Add this to your existing JavaScript section
+        $(document).ready(function() {
+            // Storage input validation
+            $(document).on('input', '.storage-input', function() {
+                let value = this.value.toUpperCase();
+                
+                // Remove any characters that aren't numbers, decimal point, or GB/TB
+                value = value.replace(/[^0-9.GBTB\s]/g, '');
+                
+                // Ensure only one decimal point
+                const parts = value.split('.');
+                if (parts.length > 2) {
+                    value = parts[0] + '.' + parts.slice(1).join('');
+                }
+                
+                // Limit to 2 decimal places
+                if (parts.length > 1) {
+                    value = parts[0] + '.' + parts[1].slice(0, 2);
+                }
+                
+                // Ensure proper spacing before unit
+                value = value.replace(/\s+/g, ' ').replace(/([0-9])([GT])/g, '$1 $2');
+                
+                // Auto-complete unit if user types G or T
+                if (value.endsWith(' G')) value += 'B';
+                if (value.endsWith(' T')) value += 'B';
+                
+                this.value = value;
+                
+                // Validate format
+                const isValid = /^\d+(\.\d{1,2})?\s*(GB|TB)$/.test(value);
+                if (isValid) {
+                    $(this).removeClass('is-invalid').addClass('is-valid');
+                } else {
+                    $(this).removeClass('is-valid').addClass('is-invalid');
+                }
+            });
+        });
+
+        // Add validation to the form submission
+        function validateForm() {
+            let isValid = true;
+            
+            // Validate storage inputs
+            $('.storage-input').each(function() {
+                const value = $(this).val().toUpperCase();
+                if (value && !/^\d+(\.\d{1,2})?\s*(GB|TB)$/.test(value)) {
+                    $(this).addClass('is-invalid');
+                    toastr.error('Please enter storage values in the format: 500 GB or 1 TB');
+                    isValid = false;
+                }
+            });
+            
+            // ... rest of your existing validation code ...
+            
+            return isValid;
+        }
     </script>
 }
 

@@ -31,9 +31,10 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link @(ViewContext.RouteData.Values["Action"].ToString() == "InvoiceDashboard" ? "active" : "")" 
-                   href="@Url.Action("InvoiceDashboard", "Material")">
-                    Invoice Dashboard
+                <a class="nav-link @(ViewContext.RouteData.Values["Action"].ToString() == "InvoiceRecord" ? "active" : "")" 
+                   href="@Url.Action("InvoiceRecord", "Material")">
+                    @* <i class="fas fa-tachometer-alt"></i>  *@
+                    Invoice Record
                 </a>
             </li>
         </ul>

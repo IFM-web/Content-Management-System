@@ -6,9 +6,11 @@ using System.Threading.Tasks;
 using ContentManagementSystem.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using ContentManagementSystem.Filters;
 
 namespace ContentManagementSystem.Controllers
 {
+    [AuthenticationFilter]
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;

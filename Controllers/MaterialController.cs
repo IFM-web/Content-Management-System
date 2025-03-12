@@ -12,9 +12,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
 using System.Linq.Expressions;
+using ContentManagementSystem.Filters;
+using System.Threading.Tasks;
 
 namespace ContentManagementSystem.Controllers
 {
+    [AuthenticationFilter]
     public class MaterialController : Controller
     {
         private readonly ApplicationDbContext _db;
@@ -27,118 +30,16 @@ namespace ContentManagementSystem.Controllers
             _webHostEnvironment = webHostEnvironment;
             _logger = logger;
 
-            // Add default branches if none exist
-            if (!_db.Branches.Any())
-            {
-                var defaultBranches = new List<Branch>
-                {
-                    new Branch { Name = "Main Branch", CompanyId = 1 },
-                    new Branch { Name = "North Branch", CompanyId = 1 },
-                    new Branch { Name = "South Branch", CompanyId = 1 }
-                };
-                _db.Branches.AddRange(defaultBranches);
-                _db.SaveChanges();
-            }
+          
+           
 
-            // Add default employees if none exist
-            if (!_db.Employees.Any())
-            {
-                var defaultEmployees = new List<Employee>
-                {
-                    new Employee 
-                    { 
-                        EmployeeId = "EMP001",
-                        Name = "John Doe",
-                        Department = "IT",
-                        Email = "john.doe@company.com",
-                        PhoneNo = "1234567890"
-                    },
-                    new Employee 
-                    { 
-                        EmployeeId = "EMP002",
-                        Name = "Jane Smith",
-                        Department = "HR",
-                        Email = "jane.smith@company.com",
-                        PhoneNo = "2345678901"
-                    },
-                    new Employee 
-                    { 
-                        EmployeeId = "EMP003",
-                        Name = "Mike Johnson",
-                        Department = "Finance",
-                        Email = "mike.johnson@company.com",
-                        PhoneNo = "3456789012"
-                    },
-                    new Employee 
-                    { 
-                        EmployeeId = "EMP004",
-                        Name = "Sarah Williams",
-                        Department = "Operations",
-                        Email = "sarah.williams@company.com",
-                        PhoneNo = "4567890123"
-                    }
-                };
-                _db.Employees.AddRange(defaultEmployees);
-                _db.SaveChanges();
-            }
+           
         }
 
         public IActionResult Index()
         {
-            try
-            {
-                if (!_db.Companies.Any())
-                {
-                    var defaultCompany = new Company { Name = "ASP Securities" };
-                    _db.Companies.Add(defaultCompany);
-                    _db.SaveChanges();
-                }
-
-                if (!_db.Manufacturers.Any())
-                {
-                    var defaultManufacturers = new List<Manufacturer>
-                    {
-                        new Manufacturer { Name = "Dell" },
-                        new Manufacturer { Name = "Lenovo" },
-                        new Manufacturer { Name = "HP" }
-                    };
-                    _db.Manufacturers.AddRange(defaultManufacturers);
-                    _db.SaveChanges();
-                }
-
-                if (!_db.Vendors.Any())
-                {
-                    var defaultVendors = new List<Vendor>
-                    {
-                        new Vendor { Name = "TCS" },
-                        new Vendor { Name = "Infosys" },
-                        new Vendor { Name = "HCL" }
-                    };
-                    _db.Vendors.AddRange(defaultVendors);
-                    _db.SaveChanges();
-                }
-
-                if (!_db.AssetItems.Any())
-                {
-                    var defaultAssets = new List<AssetItem>
-                    {
-                        new AssetItem { Name = "Laptop" },
-                        new AssetItem { Name = "Desktop" },
-                        new AssetItem { Name = "Others" }
-                    };
-                    _db.AssetItems.AddRange(defaultAssets);
-                    _db.SaveChanges();
-                }
-
-                SetupViewBag();
-                ViewBag.ShowSidebar = true;
-                return View(GetMaterialViewModel());
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in Index action: {ex.Message}");
-                return View("Error");
-            }
+            PopulateDropDowns();
+            return View(new MaterialViewModel());
         }
 
         private DateTime? ParseDate(string dateStr)
@@ -166,14 +67,14 @@ namespace ContentManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(MaterialViewModel model, IFormFile ImageFile)
+        public async Task<IActionResult> Create(MaterialViewModel model, IFormFile ImageFile)
         {
             try
             {
                 if (model?.NewMaterial == null)
                 {
                     ModelState.AddModelError("", "Invalid form submission");
-                    SetupViewBag();
+                    PopulateDropDowns();
                     return View("Index", GetMaterialViewModel());
                 }
 
@@ -194,36 +95,55 @@ namespace ContentManagementSystem.Controllers
                     else
                     {
                         ModelState.AddModelError("NewMaterial.BillDate", "Please enter date in DD/MM/YYYY format");
-                        SetupViewBag();
+                        PopulateDropDowns();
                         return View("Index", GetMaterialViewModel(model?.NewMaterial));
                     }
                 }
 
-                var isOtherAsset = _db.AssetItems.Find(material.AssetItemId)?.Name == "Others";
+                // Get or create the "Others" vendor
                 var othersVendor = _db.Vendors.FirstOrDefault(v => v.Name == "Others");
-                var othersManufacturer = _db.Manufacturers.FirstOrDefault(m => m.Name == "Others");
+                if (othersVendor == null)
+                {
+                    othersVendor = new Vendor { Name = "Others" };
+                    _db.Vendors.Add(othersVendor);
+                    _db.SaveChanges();
+                }
+
+                // Set VendorId to Others and validate CustomVendorName
+                material.VendorId = othersVendor.Id;
+                if (string.IsNullOrWhiteSpace(material.CustomVendorName))
+                {
+                    ModelState.AddModelError("NewMaterial.CustomVendorName", "Vendor Name is required");
+                }
+
+                var isOtherAsset = _db.AssetItems.Find(material.AssetItemId)?.Name == "Others";
 
                 // Remove validation for non-required fields when asset is Others
                 if (isOtherAsset)
                 {
-                    ModelState.Remove("NewMaterial.VendorId");
-                    ModelState.Remove("NewMaterial.ManufacturerId");
                     ModelState.Remove("NewMaterial.BillDate");
-                    
-                    // Set values for non-required fields
-                    material.VendorId = othersVendor?.Id;
-                    material.ManufacturerId = othersManufacturer?.Id;
-                    material.BillDate = DateTime.Now;  // Or any default date you prefer
+                    // Don't remove Manufacturer validation - it should be independent of Asset type
+                    material.BillDate = DateTime.Now;
                 }
                 else
                 {
                     // Validate required fields for non-Other assets
-                    if (!material.VendorId.HasValue)
-                        ModelState.AddModelError("NewMaterial.VendorId", "Vendor is required");
-                    if (!material.ManufacturerId.HasValue)
-                        ModelState.AddModelError("NewMaterial.ManufacturerId", "Manufacturer is required");
                     if (material.BillDate == default)
                         ModelState.AddModelError("NewMaterial.BillDate", "Bill Date is required");
+                }
+
+                // Always validate Manufacturer
+                if (!material.ManufacturerId.HasValue)
+                    ModelState.AddModelError("NewMaterial.ManufacturerId", "Manufacturer is required");
+
+                // Handle Manufacturer
+                var othersManufacturer = _db.Manufacturers.FirstOrDefault(m => m.Name == "Others");
+                if (material.ManufacturerId == othersManufacturer?.Id)
+                {
+                    if (string.IsNullOrWhiteSpace(material.CustomManufacturerName))
+                    {
+                        ModelState.AddModelError("NewMaterial.CustomManufacturerName", "Custom Manufacturer Name is required when 'Others' is selected");
+                    }
                 }
 
                 _logger.LogInformation($"Attempting to create material with Invoice No: {material.InvoiceNo}");
@@ -242,7 +162,7 @@ namespace ContentManagementSystem.Controllers
                         .Select(x => x.ErrorMessage));
                     _logger.LogWarning($"Model validation failed: {errors}");
                     
-                    SetupViewBag();
+                    PopulateDropDowns();
                     return View("Index", GetMaterialViewModel(material));
                 }
 
@@ -282,14 +202,43 @@ namespace ContentManagementSystem.Controllers
                 
                 _logger.LogInformation($"Processing {itemCount} items for {(isComputerAsset ? "Computer" : "Other")} asset");
 
+                // Create a HashSet to track serial numbers in current submission
+                var currentSerialNumbers = new HashSet<string>();
+
                 for (int i = 0; i < itemCount; i++)
                 {
                     try
                     {
+                        var serialNo = form[$"NewMaterial.MaterialItems[{i}].SerialNo"].ToString();
+                        
+                        // Skip empty serial numbers
+                        if (string.IsNullOrWhiteSpace(serialNo))
+                        {
+                            continue;
+                        }
+
+                        // Check if serial number is already used in database
+                        if (await _db.MaterialItems.AnyAsync(m => m.SerialNo == serialNo))
+                        {
+                            ModelState.AddModelError("", $"Serial number '{serialNo}' is already in use");
+                            _logger.LogWarning($"Duplicate serial number attempt: {serialNo}");
+                            PopulateDropDowns();
+                            return View("Index", GetMaterialViewModel(material));
+                        }
+
+                        // Check if serial number is duplicated in current submission
+                        if (!currentSerialNumbers.Add(serialNo))
+                        {
+                            ModelState.AddModelError("", $"Serial number '{serialNo}' is used multiple times in this submission");
+                            _logger.LogWarning($"Duplicate serial number in submission: {serialNo}");
+                            PopulateDropDowns();
+                            return View("Index", GetMaterialViewModel(material));
+                        }
+
                         var item = new MaterialItem
                         {
-                            SerialNo = form[$"NewMaterial.MaterialItems[{i}].SerialNo"],
-                            ModelNo = form[$"NewMaterial.MaterialItems[{i}].ModelNo"],
+                            SerialNo = serialNo,
+                            ModelNo = form[$"NewMaterial.MaterialItems[{i}].ModelNo"].ToString(),
                             AssetItemId = material.AssetItemId,
                             Status = "UnAssigned"
                         };
@@ -299,16 +248,22 @@ namespace ContentManagementSystem.Controllers
                         if (isComputerAsset)
                         {
                             item.Generation = form[$"NewMaterial.MaterialItems[{i}].Generation"];
-                            if (int.TryParse(form[$"NewMaterial.MaterialItems[{i}].CPUCapacity"], out int cpuCapacity))
-                                item.CPUCapacity = cpuCapacity;
-                            if (int.TryParse(form[$"NewMaterial.MaterialItems[{i}].HardDisk"], out int hardDisk))
-                                item.HardDisk = hardDisk;
-                            if (int.TryParse(form[$"NewMaterial.MaterialItems[{i}].RAMCapacity"], out int ramCapacity))
-                                item.RAMCapacity = ramCapacity;
-                            if (int.TryParse(form[$"NewMaterial.MaterialItems[{i}].SSDCapacity"], out int ssdCapacity))
-                                item.SSDCapacity = ssdCapacity;
+                            item.Processor = form[$"NewMaterial.MaterialItems[{i}].Processor"];
+                            // Parse and set RAM value
+                            if (int.TryParse(form[$"NewMaterial.MaterialItems[{i}].RAMCapacity"], out int ramValue))
+                            {
+                                item.RAMCapacity = ramValue;
+                            }
+                            else
+                            {
+                                _logger.LogWarning($"Invalid RAM value for item {i}");
+                            }
+                            item.HardDisk = form[$"NewMaterial.MaterialItems[{i}].HardDisk"];
+                            item.SSDCapacity = form[$"NewMaterial.MaterialItems[{i}].SSDCapacity"];
 
-                            _logger.LogInformation($"Computer specs: Gen={item.Generation}, CPU={item.CPUCapacity}, HDD={item.HardDisk}, RAM={item.RAMCapacity}, SSD={item.SSDCapacity}");
+                            _logger.LogInformation($"Computer specs: Gen={item.Generation}, " +
+                                $"Processor={item.Processor}, RAM={item.RAMCapacity}GB, " +
+                                $"HDD={item.HardDisk}, SSD={item.SSDCapacity}");
                         }
                         else
                         {
@@ -330,7 +285,7 @@ namespace ContentManagementSystem.Controllers
                             else
                             {
                                 ModelState.AddModelError("", $"Invalid warranty date format for item {i + 1}. Use DD/MM/YYYY");
-                                SetupViewBag();
+                                PopulateDropDowns();
                                 return View("Index", GetMaterialViewModel(model?.NewMaterial));
                             }
                         }
@@ -341,7 +296,7 @@ namespace ContentManagementSystem.Controllers
                     {
                         _logger.LogError($"Error processing item {i}: {ex.Message}");
                         ModelState.AddModelError("", $"Error processing item {i + 1}: {ex.Message}");
-                        SetupViewBag();
+                        PopulateDropDowns();
                         return View("Index", GetMaterialViewModel(model?.NewMaterial));
                     }
                 }
@@ -352,13 +307,6 @@ namespace ContentManagementSystem.Controllers
                 if (_db.AssetItems.Find(material.AssetItemId)?.Name == "Others")
                 {
                     material.CustomAssetName = model.NewMaterial.CustomAssetName;
-                }
-
-                // Handle Vendor
-                if (material.VendorId == othersVendor?.Id)
-                {
-                    material.CustomVendorName = form["NewMaterial.CustomVendorName"];
-                    _logger.LogInformation($"Setting custom vendor name: {material.CustomVendorName}");
                 }
 
                 // Handle Manufacturer
@@ -380,26 +328,82 @@ namespace ContentManagementSystem.Controllers
                     material.RecordDate = receivedDate.Value;
                 }
 
+                // Check for duplicate serial numbers within the form
+                var serialNumbers = material.MaterialItems.Select(m => m.SerialNo).ToList();
+                if (serialNumbers.Count != serialNumbers.Distinct().Count())
+                {
+                    ModelState.AddModelError("", "Duplicate serial numbers found in the form");
+                    TempData["Error"] = "Duplicate serial numbers are not allowed";
+                    return View("Index", GetMaterialViewModel(material));
+                }
+
+                // Check each serial number against the database
+                foreach (var item in material.MaterialItems)
+                {
+                    if (!string.IsNullOrEmpty(item.SerialNo))
+                    {
+                        if (!await IsSerialNumberUnique(item.SerialNo))
+                        {
+                            ModelState.AddModelError("", $"Serial number {item.SerialNo} already exists in the system");
+                            TempData["Error"] = $"Serial number {item.SerialNo} is already in use";
+                            return View("Index", GetMaterialViewModel(material));
+                        }
+                    }
+                }
+
                 // Add and save to database
                 _logger.LogInformation("Attempting to save to database...");
                 _db.Materials.Add(material);
-                _db.SaveChanges();
+                await _db.SaveChangesAsync();
 
                 TempData["Success"] = "Material created successfully!";
                 _logger.LogInformation($"Successfully created material with ID: {material.Id}");
+
+                foreach (var item in material.MaterialItems)
+                {
+                    _logger.LogInformation($"Material Item - Serial: {item.SerialNo}, Processor: {item.Processor}");
+                }
+
                 return RedirectToAction(nameof(Index));
+            }
+            catch (DbUpdateException ex)
+            {
+                // Check for duplicate invoice number
+                if (ex.InnerException?.Message.Contains("IX_Materials_InvoiceNo") == true)
+                {
+                    var invoiceNo = model.NewMaterial.InvoiceNo;
+                    ModelState.AddModelError("NewMaterial.InvoiceNo", 
+                        $"Invoice number '{invoiceNo}' already exists. Please use a different invoice number.");
+                    TempData["Error"] = $"Invoice number '{invoiceNo}' is already in use";
+                    
+                    // Log the duplicate invoice attempt
+                    _logger.LogWarning($"Attempted to create duplicate invoice number: {invoiceNo}");
+                }
+                // Handle duplicate serial numbers
+                else if (ex.InnerException?.Message.Contains("UC_MaterialItems_SerialNo") == true)
+                {
+                    ModelState.AddModelError("", "One or more serial numbers are already in use");
+                    TempData["Error"] = "Duplicate serial numbers are not allowed";
+                }
+                else
+                {
+                    ModelState.AddModelError("", "An error occurred while saving the material");
+                    TempData["Error"] = "An error occurred while saving";
+                }
+                PopulateDropDowns();
+                return View("Index", GetMaterialViewModel(model?.NewMaterial));
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error creating material: {ex.Message}");
                 _logger.LogError($"Stack trace: {ex.StackTrace}");
                 ModelState.AddModelError("", $"Error saving to database: {ex.Message}");
-                SetupViewBag();
+                PopulateDropDowns();
                 return View("Index", GetMaterialViewModel(model?.NewMaterial));
             }
         }
 
-        private void SetupViewBag()
+        private void PopulateDropDowns()
         {
             ViewBag.Companies = new SelectList(_db.Companies.OrderBy(c => c.Name), "Id", "Name");
             ViewBag.AssetItems = new SelectList(_db.AssetItems.OrderBy(a => a.Name), "Id", "Name");
@@ -466,6 +470,8 @@ namespace ContentManagementSystem.Controllers
                     .Include(m => m.Manufacturer)
                     .Include(m => m.AssetItem)
                     .Include(m => m.MaterialItems)
+                    
+                   
                     .Where(m => m.MaterialItems.Any(mi => mi.Status == "UnAssigned"))
                     .Select(m => new Material
                     {
@@ -487,14 +493,16 @@ namespace ContentManagementSystem.Controllers
                                 ModelNo = mi.ModelNo,
                                 ItemName = mi.ItemName,
                                 Generation = mi.Generation,
-                                CPUCapacity = mi.CPUCapacity,
+                                Processor = mi.Processor,
                                 HardDisk = mi.HardDisk,
                                 RAMCapacity = mi.RAMCapacity,
                                 SSDCapacity = mi.SSDCapacity,
                                 Other = mi.Other,
                                 WarrantyDate = mi.WarrantyDate,
+                           
                                 Status = mi.Status,
-                                AssetItemId = mi.AssetItemId
+                                AssetItemId = mi.AssetItemId,
+                               
                             }).ToList()
                     })
                     .AsNoTracking();
@@ -598,22 +606,62 @@ namespace ContentManagementSystem.Controllers
             return View(model);
         }
 
-        public IActionResult InvoiceDashboard()
+        public IActionResult InvoiceRecord(string searchTerm, string startDate, string endDate, 
+            string receivedDateFrom, string receivedDateTo)
         {
             try
             {
-                var materials = _db.Materials
+                // Parse dates
+                DateTime? billDateFrom = ParseDate(startDate);
+                DateTime? billDateTo = ParseDate(endDate);
+                DateTime? recDateFrom = ParseDate(receivedDateFrom);
+                DateTime? recDateTo = ParseDate(receivedDateTo);
+
+                var query = _db.Materials
                     .Include(m => m.Company)
                     .Include(m => m.AssetItem)
                     .Include(m => m.Vendor)
                     .Include(m => m.Manufacturer)
                     .Include(m => m.MaterialItems)
-                    .OrderByDescending(m => m.BillDate)
-                    .ToList();
+                    .AsNoTracking();
+
+                // Apply search filter
+                if (!string.IsNullOrEmpty(searchTerm))
+                {
+                    searchTerm = searchTerm.ToLower();
+                    query = query.Where(m => 
+                        m.InvoiceNo.ToLower().Contains(searchTerm) ||
+                        m.Company.Name.ToLower().Contains(searchTerm) ||
+                        m.AssetItem.Name.ToLower().Contains(searchTerm) ||
+                        m.CustomVendorName.ToLower().Contains(searchTerm) ||
+                        m.Manufacturer.Name.ToLower().Contains(searchTerm) ||
+                        m.MaterialItems.Any(mi => 
+                            mi.SerialNo.ToLower().Contains(searchTerm) ||
+                            mi.ModelNo.ToLower().Contains(searchTerm))
+                    );
+                }
+
+                // Apply date filters
+                if (billDateFrom.HasValue)
+                    query = query.Where(m => m.BillDate.Date >= billDateFrom.Value.Date);
+                if (billDateTo.HasValue)
+                    query = query.Where(m => m.BillDate.Date <= billDateTo.Value.Date);
+                if (recDateFrom.HasValue)
+                    query = query.Where(m => m.RecordDate.Date >= recDateFrom.Value.Date);
+                if (recDateTo.HasValue)
+                    query = query.Where(m => m.RecordDate.Date <= recDateTo.Value.Date);
+
+                // Order by date descending
+                query = query.OrderByDescending(m => m.BillDate);
 
                 var model = new MaterialViewModel
                 {
-                    Materials = materials
+                    Materials = query.ToList(),
+                    SearchTerm = searchTerm,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    ReceivedDateFrom = receivedDateFrom,
+                    ReceivedDateTo = receivedDateTo
                 };
 
                 return View(model);
@@ -625,10 +673,28 @@ namespace ContentManagementSystem.Controllers
             }
         }
 
-        public IActionResult AssignedAssets()
+        public IActionResult AssignedAssets(string? issuanceDateFrom, string issuanceDateTo)
         {
             try
+
             {
+                DateTime? fromDate = DateTime.Today;
+                DateTime? toDate = DateTime.Today;
+
+                if (!string.IsNullOrEmpty(issuanceDateFrom))
+                {
+                    DateTime.TryParseExact(issuanceDateFrom, "dd/MM/yyyy",
+                        CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedFromDate);
+                    fromDate = parsedFromDate;
+                }
+
+                if (!string.IsNullOrEmpty(issuanceDateTo))
+                {
+                    DateTime.TryParseExact(issuanceDateTo, "dd/MM/yyyy",
+                        CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedToDate);
+                    toDate = parsedToDate;
+                }
+
                 var assignedAssets = _db.MaterialAssignments
                     .Include(ma => ma.MaterialOut)
                         .ThenInclude(mo => mo.Company)
@@ -636,7 +702,8 @@ namespace ContentManagementSystem.Controllers
                         .ThenInclude(mo => mo.Branch)
                     .Include(ma => ma.MaterialItem)
                         .ThenInclude(mi => mi.AssetItem)
-                    .Include(ma => ma.Employee)
+                    .Include(ma => ma.Employee)                   
+                  
                     .Select(ma => new AssignedAssetItem
                     {
                         MaterialOutId = ma.MaterialOutId,
@@ -655,6 +722,11 @@ namespace ContentManagementSystem.Controllers
                     .OrderByDescending(a => a.IssuanceDate)
                     .ToList();
 
+                if(issuanceDateFrom != null || issuanceDateTo !=null)
+                {
+                    assignedAssets= assignedAssets.Where(ma => ma.IssuanceDate >= fromDate && ma.IssuanceDate <= toDate).ToList();
+                }
+
                 var viewModel = new AssignedAssetsViewModel
                 {
                     AssignedAssets = assignedAssets
@@ -671,49 +743,8 @@ namespace ContentManagementSystem.Controllers
 
         public IActionResult MaterialOut()
         {
-            try
-            {
-                // Ensure we have at least one company
-                if (!_db.Companies.Any())
-                {
-                    _db.Companies.Add(new Company { Name = "ASP Securities" });
-                    _db.SaveChanges();
-                }
-
-                // Get all companies and assets
-                var companies = _db.Companies.ToList();
-                var firstCompany = companies.FirstOrDefault();
-                var assets = _db.AssetItems.ToList();
-
-                var model = new MaterialOutViewModel
-                {
-                    CompanyId = firstCompany?.Id ?? 1,  // Set default CompanyId
-                    IssuanceDate = DateTime.Today  // Set default date to today
-                };
-
-                // Setup ViewBag
-                ViewBag.Companies = new SelectList(companies, "Id", "Name", firstCompany?.Id);
-                ViewBag.Assets = new SelectList(assets, "Id", "Name");
-
-                // Get initial branches for the default company
-                var branches = _db.Branches
-                    .Where(b => b.CompanyId == model.CompanyId)
-                    .Select(b => new
-                    {
-                        id = b.Id.ToString(),
-                        text = b.Name
-                    })
-                    .ToList();
-
-                ViewBag.InitialBranches = branches;
-                
-                return View(model);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in MaterialOut action: {ex.Message}");
-                return View("Error");
-            }
+            SetupMaterialOutViewBag();
+            return View(new MaterialOutViewModel());
         }
 
         [HttpGet]
@@ -828,14 +859,16 @@ namespace ContentManagementSystem.Controllers
                     serialNo = mi.SerialNo,
                     modelNo = mi.ModelNo,
                     generation = mi.Generation,
-                    cpuCapacity = mi.CPUCapacity,
+                    processor = mi.Processor,
                     ramCapacity = mi.RAMCapacity,
                     hardDisk = mi.HardDisk,
                     ssdCapacity = mi.SSDCapacity,
                     windowsKey = mi.WindowsKey,
                     msOfficeKey = mi.MSOfficeKey,
                     warrantyDate = mi.WarrantyDate,
-                    other = mi.Other
+                    other = mi.Other,
+                   
+
                 });
 
             if (!string.IsNullOrEmpty(search))
@@ -855,26 +888,27 @@ namespace ContentManagementSystem.Controllers
         }
 
         [HttpPost]
-        public IActionResult CreateMaterialOut(MaterialOutViewModel model, string BranchName)
+        public async Task<IActionResult> MaterialOut(MaterialOutViewModel model)
         {
             try
             {
                 if (ModelState.IsValid)
                 {
+                   
                     using (var transaction = _db.Database.BeginTransaction())
                     {
                         try
                         {
                             // Check if branch exists or create new one
                             var branch = _db.Branches
-                                .FirstOrDefault(b => b.Name.ToLower() == BranchName.ToLower() && 
+                                .FirstOrDefault(b => b.Name.ToLower() == model.BranchName.ToLower() && 
                                                    b.CompanyId == model.CompanyId);
                                 
                             if (branch == null)
                             {
                                 branch = new Branch
                                 {
-                                    Name = BranchName,
+                                    Name = model.BranchName,
                                     CompanyId = model.CompanyId
                                 };
                                 _db.Branches.Add(branch);
@@ -918,6 +952,9 @@ namespace ContentManagementSystem.Controllers
                                                   .Where(x => !string.IsNullOrEmpty(x))
                                                   .ToList();
 
+                            var windowsKeys = form["WindowsKey"].ToString().Split(',');
+                            var msOfficeKeys = form["MSOfficeKey"].ToString().Split(',');
+
                             for (int i = 0; i < serialNumbers.Count; i++)
                             {
                                 var serialNo = serialNumbers[i];
@@ -926,13 +963,11 @@ namespace ContentManagementSystem.Controllers
 
                                 if (materialItem != null)
                                 {
-                                    // Update material item status and keys
                                     materialItem.Status = "Assigned";
-                                    materialItem.WindowsKey = form[$"windows-key[{i}]"].ToString();
-                                    materialItem.MSOfficeKey = form[$"msoffice-key[{i}]"].ToString();
+                                    materialItem.WindowsKey = windowsKeys.Length > i ? windowsKeys[i] : "";
+                                    materialItem.MSOfficeKey = msOfficeKeys.Length > i ? msOfficeKeys[i] : "";
                                     _db.MaterialItems.Update(materialItem);
 
-                                    // Create assignment record
                                     var assignment = new MaterialAssignment
                                     {
                                         MaterialOutId = materialOut.Id,
@@ -947,28 +982,40 @@ namespace ContentManagementSystem.Controllers
                             _db.SaveChanges();
                             transaction.Commit();
 
-                            TempData["Success"] = "Material OUT created successfully";
-                            return RedirectToAction("AssignedAssets");
+                            TempData["Success"] = $"Material has been successfully assigned to {model.EmployeeName} ({model.EmployeeId})";
+                            ModelState.Clear();
+                            // Prepare a fresh model with necessary ViewBag data
+                            var newModel = new MaterialOutViewModel();
+                            SetupMaterialOutViewBag();
+                            return View(newModel);
                         }
                         catch (Exception ex)
                         {
                             transaction.Rollback();
-                            _logger.LogError($"Error in CreateMaterialOut: {ex.Message}");
-                            ModelState.AddModelError("", "Error saving changes. Please try again.");
+                            _logger.LogError($"Error in MaterialOut: {ex.Message}");
+                            ModelState.AddModelError("", "An error occurred while processing the request.");
+                            SetupMaterialOutViewBag();
+                            return View("MaterialOut", model);
                         }
                     }
                 }
-
-                // If we get here, something failed, redisplay form
-                ViewBag.Companies = new SelectList(_db.Companies, "Id", "Name", model.CompanyId);
-                ViewBag.Assets = new SelectList(_db.AssetItems, "Id", "Name");
-                return View("MaterialOut", model);
+                SetupMaterialOutViewBag();
+                return View(model);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error in CreateMaterialOut: {ex.Message}");
-                return View("Error");
+                _logger.LogError($"Error in MaterialOut: {ex.Message}");
+                ModelState.AddModelError("", "An error occurred while processing the request.");
+                SetupMaterialOutViewBag();
+                return View("MaterialOut", model);
             }
+        }
+
+        private void SetupMaterialOutViewBag()
+        {
+            ViewBag.Companies = new SelectList(_db.Companies.OrderBy(c => c.Name), "Id", "Name");
+            ViewBag.AssetItems = new SelectList(_db.AssetItems.OrderBy(a => a.Name), "Id", "Name");
+            ViewBag.Assets = ViewBag.AssetItems;
         }
 
         [HttpGet]
@@ -1021,6 +1068,84 @@ namespace ContentManagementSystem.Controllers
             {
                 _logger.LogError($"Error creating branch: {ex.Message}");
                 return Json(new { success = false, message = "Error creating branch" });
+            }
+        }
+
+        // Add this method to check for duplicate serial numbers
+        private async Task<bool> IsSerialNumberUnique(string serialNo)
+        {
+            return !await _db.MaterialItems.AnyAsync(m => m.SerialNo == serialNo);
+        }
+
+        // Add an API endpoint to check serial number availability
+        [HttpGet]
+        public async Task<IActionResult> CheckSerialNumber(string serialNo)
+        {
+            if (string.IsNullOrEmpty(serialNo))
+            {
+                return Json(new { isAvailable = false, message = "Serial number cannot be empty" });
+            }
+
+            var isUnique = await IsSerialNumberUnique(serialNo);
+            return Json(new { 
+                isAvailable = isUnique, 
+                message = isUnique ? "Serial number is available" : "Serial number already exists" 
+            });
+        }
+
+        [HttpGet]
+        public IActionResult GetMaterialItems(int materialId)
+        {
+            try
+            {
+                var materialItems = _db.MaterialItems
+                    .Include(mi => mi.Material)
+                        .ThenInclude(m => m.AssetItem)
+                    .Where(mi => mi.MaterialId == materialId)
+                    .Select(mi => new
+                    {
+                        mi.SerialNo,
+                        mi.ModelNo,
+                        mi.ItemName,
+                        mi.Generation,
+                        mi.Processor,
+                        mi.RAMCapacity,
+                        mi.HardDisk,
+                        mi.SSDCapacity,
+                        mi.WindowsKey,
+                        mi.MSOfficeKey,
+                        mi.Other,
+                        WarrantyDate = mi.WarrantyDate.HasValue ? mi.WarrantyDate.Value.ToString("dd/MM/yyyy") : "",
+                        mi.Status,
+                        AssetType = mi.Material.AssetItem.Name
+                    })
+                    .ToList();
+
+                return Json(new { success = true, data = materialItems });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error fetching material items: {ex.Message}");
+                return Json(new { success = false, message = "Error fetching material items" });
+            }
+        }
+
+        // Add a method to check if invoice number exists
+        [HttpGet]
+        public async Task<IActionResult> CheckInvoiceNumber(string invoiceNo)
+        {
+            try
+            {
+                var exists = await _db.Materials.AnyAsync(m => m.InvoiceNo == invoiceNo);
+                return Json(new { 
+                    isAvailable = !exists, 
+                    message = exists ? "This invoice number already exists" : "Invoice number is available" 
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error checking invoice number: {ex.Message}");
+                return Json(new { isAvailable = false, message = "Error checking invoice number" });
             }
         }
     }

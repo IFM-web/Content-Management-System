@@ -27,34 +27,42 @@ namespace ContentManagementSystem.Controllers
         }
 
         [HttpPost]
-        public IActionResult Login(Users user)
+        public IActionResult Login(LoginViewModel loginModel)
         {
-            if (string.IsNullOrEmpty(user.Username) || string.IsNullOrEmpty(user.Password))
+            if (ModelState.IsValid)
             {
-                ModelState.AddModelError("", "Username and Password are required");
-                return View(user);
+                var user = _context.Users
+                    .FirstOrDefault(u => u.Username.ToLower() == loginModel.Username.ToLower());
+
+                if (user == null)
+                {
+                    ModelState.AddModelError("Username", "Username not found");
+                    return View(loginModel);
+                }
+
+                if (!user.Password.Equals(loginModel.Password))
+                {
+                    ModelState.AddModelError("Password", "Incorrect password");
+                    return View(loginModel);
+                }
+
+                HttpContext.Session.SetString("UserId", user.UserId.ToString());
+                HttpContext.Session.SetString("Username", user.Username);
+
+                return RedirectToAction("Index", "Material");
             }
 
-            // First get the data from database
-            var obj = _context.Users
-                .FirstOrDefault(u => u.Username.ToLower() == user.Username.ToLower());
+            return View(loginModel);
+        }
 
-            if (obj == null)
-            {
-                ModelState.AddModelError("Username", "Username not found");
-                return View(user);
-            }
-
-            if (!obj.Password.Equals(user.Password))
-            {
-                ModelState.AddModelError("Password", "Incorrect password");
-                return View(user);
-            }
-
-            HttpContext.Session.SetString("UserID", obj.UserId.ToString());
-            HttpContext.Session.SetString("UserName", obj.Username);
-
-            return RedirectToAction("Index", "Material");
+        [HttpGet]
+        public IActionResult Logout()
+        {
+            // Clear all session data
+            HttpContext.Session.Clear();
+            
+            // Redirect to login page
+            return RedirectToAction("Login", "Users");
         }
 
         // GET: Users

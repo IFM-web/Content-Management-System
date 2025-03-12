@@ -1,4 +1,5 @@
-﻿@model ContentManagementSystem.Models.Users
+﻿@model ContentManagementSystem.Models.LoginViewModel
+@using Microsoft.AspNetCore.Http
 
 <!DOCTYPE html>
 <html>
@@ -67,39 +68,49 @@
             <div class="logo">
                 <img src="~/images/logo.png" alt="Logo" height="40">
             </div>
-            <h2 class="mb-4">Sign in</h2>
-            @if (!ViewData.ModelState.IsValid)
+            @if (Context.Session.GetString("UserId") != null)
             {
-                <div class="alert alert-danger">
-                    <ul class="mb-0">
-                        @foreach (var modelError in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-                        {
-                            <li>@modelError.ErrorMessage</li>
-                        }
-                    </ul>
+                <div class="text-center mb-4">
+                    <p>Welcome, @Context.Session.GetString("Username")!</p>
+                    <a href="@Url.Action("Logout", "Users")" class="btn btn-danger">Logout</a>
                 </div>
             }
-            @using (Html.BeginForm("Login", "Users", FormMethod.Post))
+            else
             {
-                @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-                <div class="mb-3">
-                    @Html.LabelFor(m => m.Username, "Username")
-                    @Html.TextBoxFor(m => m.Username, new { @class = "form-control", placeholder = "Enter your username" })
-                    @Html.ValidationMessageFor(m => m.Username, "", new { @class = "text-danger" })
-                </div>
-                <div class="mb-3">
-                    @Html.LabelFor(m => m.Password, "Password")
-                    @Html.PasswordFor(m => m.Password, new { @class = "form-control", placeholder = "Enter at least 8+ characters" })
-                    @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-danger" })
-                </div>
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="rememberMe">
-                        <label class="form-check-label" for="rememberMe">Remember me</label>
+                <h2 class="mb-4">Sign in</h2>
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            @foreach (var modelError in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                            {
+                                <li>@modelError.ErrorMessage</li>
+                            }
+                        </ul>
                     </div>
-                    <a href="#" class="text-decoration-none">Forgot password?</a>
-                </div>
-                <button type="submit" class="btn btn-login w-100">Sign in</button>
+                }
+                @using (Html.BeginForm("Login", "Users", FormMethod.Post))
+                {
+                    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+                    <div class="mb-3">
+                        @Html.LabelFor(m => m.Username, "Username")
+                        @Html.TextBoxFor(m => m.Username, new { @class = "form-control", placeholder = "Enter your username" })
+                        @Html.ValidationMessageFor(m => m.Username, "", new { @class = "text-danger" })
+                    </div>
+                    <div class="mb-3">
+                        @Html.LabelFor(m => m.Password, "Password")
+                        @Html.PasswordFor(m => m.Password, new { @class = "form-control", placeholder = "Enter your password" })
+                        @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-danger" })
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">Remember me</label>
+                        </div>
+                        <a href="#" class="text-decoration-none">Forgot password?</a>
+                    </div>
+                    <button type="submit" class="btn btn-login w-100">Sign in</button>
+                }
             }
         </div>
         <div class="illustration">

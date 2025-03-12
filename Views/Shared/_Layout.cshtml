@@ -1,4 +1,6 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Http
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -103,6 +105,31 @@
     </style>
 </head>
 <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"> </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                
+            </div>
+            <div class="navbar-nav ms-auto">
+                @if (Context.Session.GetString("UserId") != null)
+                {
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Welcome, @Context.Session.GetString("Username")
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="@Url.Action("Logout", "Users")">Logout</a></li>
+                        </ul>
+                    </li>
+                }
+            </div>
+        </div>
+    </nav>
+
     <div class="container-fluid">
         <main role="main" class="pb-3">
             @RenderBody()
@@ -130,6 +157,7 @@
     
     <!-- Custom Scripts -->
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/xlxs.full.min.js"></script>
     
     <!-- Additional Scripts Section -->
     @await RenderSectionAsync("Scripts", required: false)

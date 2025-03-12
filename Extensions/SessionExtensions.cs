@@ -1,0 +1,1 @@
+// You can delete this file entirely since we'll use the built-in SessionExtensions 

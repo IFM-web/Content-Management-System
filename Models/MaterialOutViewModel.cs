@@ -8,9 +8,11 @@ public class MaterialOutViewModel
     {
         // Initialize the Items collection in constructor
         Items = new List<MaterialOutItemViewModel>();
+        IssuanceDate = DateTime.Today;
     }
 
     public int CompanyId { get; set; }
+    public string BranchName { get; set; }
     public int BranchId { get; set; }
     public string EmployeeId { get; set; }
     public string EmployeeName { get; set; }

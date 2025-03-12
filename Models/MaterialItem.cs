@@ -3,9 +3,11 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;  // Add this for Index attribute
 
 namespace ContentManagementSystem.Models
 {
+    [Index(nameof(SerialNo), IsUnique = true)]  // Use the correct attribute
     public class MaterialItem
     {
         private DateTime? _warrantyDate;
@@ -28,10 +30,17 @@ namespace ContentManagementSystem.Models
         
         // Fields for Desktop/Laptop
         public string Generation { get; set; }
-        public int? CPUCapacity { get; set; }
-        public int? HardDisk { get; set; }
+        
+        [RegularExpression(@"^[a-zA-Z0-9\s-]+$", ErrorMessage = "Processor can only contain letters, numbers, spaces and hyphens")]
+        [StringLength(100)]
+        public string Processor { get; set; }
+        [RegularExpression(@"^\d+(\.\d{1,2})?\s*(GB|TB)$", ErrorMessage = "Please enter a valid size with GB or TB (e.g., 500 GB, 1 TB, 2.5 TB)")]
+        [StringLength(50)]
+        public string HardDisk { get; set; }
         public int? RAMCapacity { get; set; }
-        public int? SSDCapacity { get; set; }
+        [RegularExpression(@"^\d+(\.\d{1,2})?\s*(GB|TB)$", ErrorMessage = "Please enter a valid size with GB or TB (e.g., 500 GB, 1 TB, 2.5 TB)")]
+        [StringLength(50)]
+        public string SSDCapacity { get; set; }
         public string Other { get; set; }
         
         // Fields for Other items

@@ -7,7 +7,7 @@ namespace ContentManagementSystem.Models
         [Key]
         public int UserId { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Username is required")]
         [Display(Name = "Username")]
         [StringLength(50, MinimumLength = 3, ErrorMessage = "Username must be between 3 and 50 characters")]
         public string Username { get; set; }
@@ -21,7 +21,7 @@ namespace ContentManagementSystem.Models
         [DataType(DataType.EmailAddress, ErrorMessage = "Email ID is not valid")]
         public string Email { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Password is required")]
         [StringLength(50, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters long")]
         [Display(Name = "Password")]
         [DataType(DataType.Password)]

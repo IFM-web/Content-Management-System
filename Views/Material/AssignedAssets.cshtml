@@ -10,8 +10,86 @@
             <div class="container mt-4">
                 <h2>Assigned Assets</h2>
 
-                <div class="table-responsive mt-4">
+                <!-- Date Filter Form -->
+                @using (Html.BeginForm("AssignedAssets", "Material", FormMethod.Get))
+                {
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <input type="text" 
+                                       name="issuanceDateFrom" 
+                                       class="form-control date-picker" 
+                                       placeholder="Issuance Date From"
+                                       value="@(ViewBag.IssuanceDateFrom?.ToString("dd/MM/yyyy"))" 
+                                       autocomplete="off" />
+                                <span class="input-group-text">
+                                    <i class="fas fa-calendar"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <input type="text" 
+                                       name="issuanceDateTo" 
+                                       class="form-control date-picker" 
+                                       placeholder="Issuance Date To"
+                                       value="@(ViewBag.IssuanceDateTo?.ToString("dd/MM/yyyy"))" 
+                                       autocomplete="off" />
+                                <span class="input-group-text">
+                                    <i class="fas fa-calendar"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary">Apply Filter</button>
+                            <a href="@Url.Action("AssignedAssets")" class="btn btn-secondary">Reset</a>
+                            <button class="btn btn-secondary" onclick="exportexcel()">Export Excel</button>
+                        </div>
+                    </div>
+                }
+
+                <div class="table-responsive mt-4 " >
                     <table class="table table-bordered table-hover" id="assignedAssetsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Issuance Date</th>
+                                <th>Company</th>
+                                <th>Branch</th>
+                                <th>Employee ID</th>
+                                <th>Employee Name</th>
+                                <th>Department</th>
+                                <th>Asset</th>
+                                <th>Serial No</th>
+                                <th>Model No</th>
+                                <th>Warranty Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var asset in Model.AssignedAssets)
+                            {
+                                <tr>
+                                    <td>@asset.IssuanceDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@asset.CompanyName</td>
+                                    <td>@asset.BranchName</td>
+                                    <td>@asset.EmployeeId</td>
+                                    <td>@asset.EmployeeName</td>
+                                    <td>@asset.Department</td>
+                                    <td>@asset.AssetName</td>
+                                    <td>@asset.SerialNo</td>
+                                    <td>@asset.ModelNo</td>
+                                    <td>@(asset.WarrantyDate?.ToString("dd/MM/yyyy") ?? "-")</td>
+                                    <td>
+                                        <span class="badge bg-success">@asset.Status</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="table-responsive mt-4 d-none">
+                    <table class="table table-bordered table-hover" id="assignedAssetsTableHid">
                         <thead class="table-light">
                             <tr>
                                 <th>Issuance Date</th>
@@ -54,12 +132,57 @@
     </div>
 </div>
 
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+    <style>
+        .datepicker {
+            z-index: 1060 !important;
+        }
+
+        .input-group-text {
+            cursor: pointer;
+        }
+
+        .input-group-text:hover {
+            background-color: #e9ecef;
+        }
+
+        .datepicker table tr td.today {
+            background-color: #FFF176 !important;
+            border-color: #FFE082 !important;
+        }
+
+        .datepicker table tr td.active {
+            background-color: #007bff !important;
+            border-color: #0056b3 !important;
+        }
+    </style>
+}
+
 @section Scripts {
     <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
 
     <script>
+
+        function exportexcel(type, fn, dl) {
+
+            var ddd = 'Assigned Assets';
+            var elt = document.getElementById('assignedAssetsTableHid');
+            console.log(elt);
+            var wb = XLSX.utils.table_to_book(elt, { sheet: "sheet1" });
+
+
+            return dl ?
+                XLSX.write(wb, { bookType: type, bookSST: true, type: 'base64' }) :
+                XLSX.writeFile(wb, fn || (ddd + '.' + (type || 'xlsx')));
+
+            // XLSX.writeFile(wb, fn || (ddd+ (type+ '.' || 'xlsx')));
+        }
+
         $(document).ready(function() {
             $('#assignedAssetsTable').DataTable({
                 order: [[0, 'desc']], // Sort by issuance date descending
@@ -68,6 +191,37 @@
                     search: "Search assigned assets:"
                 }
             });
+
+            // Initialize datepickers
+            $('.date-picker').datepicker({
+                format: 'dd/mm/yyyy',
+                autoclose: true,
+                todayHighlight: true,
+                clearBtn: true
+            });
+
+            // Handle calendar icon click
+            $('.input-group-text').click(function() {
+                $(this).closest('.input-group').find('.date-picker').datepicker('show');
+            });
+
+            // Hide datepicker when date is selected
+            $('.date-picker').on('changeDate', function() {
+                $(this).datepicker('hide');
+            });
+
+            @if (TempData["ShowMessage"]?.ToString() == "True")
+            {
+                <text>
+                Swal.fire({
+                    title: 'Success!',
+                    text: '@TempData["Success"]',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                </text>
+            }
         });
     </script>
 }

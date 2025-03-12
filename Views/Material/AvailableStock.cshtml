@@ -1,4 +1,7 @@
 @model ContentManagementSystem.Models.AvailableStockViewModel
+@{
+    int i = 1;
+}
 
 <div class="container-fluid">
     <div class="row">
@@ -14,9 +17,6 @@
                 @using (Html.BeginForm("AvailableStock", "Material", FormMethod.Get))
                 {
                     <div class="row mb-3">
-                        <div class="col-md-3">
-                            <input type="text" name="searchTerm" class="form-control" placeholder="Search..." value="@Model.SearchTerm" />
-                        </div>
                         <div class="col-md-3">
                             <div class="input-group">
                                 <input type="text" 
@@ -43,10 +43,12 @@
                                 </span>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <button type="submit" class="btn btn-primary">Search</button>
                             <a href="@Url.Action("AvailableStock")" class="btn btn-secondary">Reset</a>
+                            <button type="submit" class="btn btn-primary" onclick="exportexcel()">Export Excel</button>
                         </div>
+                     
                     </div>
                 }
 
@@ -54,6 +56,7 @@
                     <table class="table table-bordered table-hover" id="availableStockTable">
                         <thead class="table-light">
                             <tr>
+                                
                                 <th>Invoice No</th>
                                 <th>Asset</th>
                                 <th>Vendor</th>
@@ -61,6 +64,8 @@
                                 <th>Serial No</th>
                                 <th>Model No</th>
                                 <th>Item Details</th>
+                                <th>Bill Date</th>
+                                <th>Recieved Date</th>
                                 <th>Warranty Date</th>
                                 <th>Status</th>
                             </tr>
@@ -68,9 +73,10 @@
                         <tbody>
                             @foreach (var material in Model.Materials)
                             {
-                                foreach (var item in material.MaterialItems)
+                                foreach (var item in material.MaterialItems.Distinct())
                                 {
                                     <tr>
+                                       
                                         <td>@material.InvoiceNo</td>
                                         <td>
                                             @if (material.AssetItem.Name == "Others")
@@ -116,12 +122,12 @@
                                             else if (material.AssetItem.Name == "Desktop" || material.AssetItem.Name == "Laptop" || material.AssetItem.Name == "Server")
                                             {
                                                 <span>Gen: @item.Generation</span><br/>
-                                                <span>CPU: @item.CPUCapacity GB</span><br/>
+                                                <span>Processor: @item.Processor</span><br/>
                                                 <span>RAM: @item.RAMCapacity GB</span><br/>
-                                                <span>HDD: @item.HardDisk GB</span>
-                                                @if (item.SSDCapacity > 0)
+                                                <span>HDD: @item.HardDisk</span>
+                                                @if (!string.IsNullOrEmpty(item.SSDCapacity))
                                                 {
-                                                    <br/><span>SSD: @item.SSDCapacity GB</span>
+                                                    <br/><span>SSD: @item.SSDCapacity</span>
                                                 }
                                                 @if (!string.IsNullOrEmpty(item.Other))
                                                 {
@@ -129,12 +135,114 @@
                                                 }
                                             }
                                         </td>
+                                        <td>@(material.BillDate.ToString("dd/MM/yyyy") ?? "-")</td>
+                                        <td>@(material.RecordDate.ToString("dd/MM/yyyy") ?? "-")</td>
                                         <td>@(item.WarrantyDate?.ToString("dd/MM/yyyy") ?? "-")</td>
                                         <td>
                                             <span class="badge bg-success">@item.Status</span>
                                         </td>
                                     </tr>
+
+                               
                                 }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+             <div class="table-responsive d-none">
+                    <table class="table table-bordered table-hover" id="availableStockTableHid">
+                        <thead class="table-light">
+                            <tr>
+                                <th>SR No</th>
+                                <th>Invoice No</th>
+                                <th>Asset</th>
+                                <th>Vendor</th>
+                                <th>Manufacturer</th>
+                                <th>Serial No</th>
+                                <th>Model No</th>
+                                <th>Item Details</th>
+                                <th>Bill Date</th>
+                                <th>Recieved Date</th>
+                                <th>Warranty Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var material in Model.Materials)
+                            {
+                                foreach (var item in material.MaterialItems)
+                                {
+                                    <tr>
+                                        <td>@i</td>
+                                        <td>@material.InvoiceNo</td>
+                                        <td>
+                                            @if (material.AssetItem.Name == "Others")
+                                            {
+                                                @material.CustomAssetName
+                                            }
+                                            else
+                                            {
+                                                @material.AssetItem.Name
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (material.Vendor?.Name == "Others")
+                                            {
+                                                @material.CustomVendorName
+                                            }
+                                            else
+                                            {
+                                                @(material.Vendor?.Name ?? "-")
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (material.Manufacturer?.Name == "Others")
+                                            {
+                                                @material.CustomManufacturerName
+                                            }
+                                            else
+                                            {
+                                                @(material.Manufacturer?.Name ?? "-")
+                                            }
+                                        </td>
+                                        <td>@item.SerialNo</td>
+                                        <td>@item.ModelNo</td>
+                                        <td>
+                                            @if (material.AssetItem.Name == "Others")
+                                            {
+                                                @item.ItemName
+                                                if (!string.IsNullOrEmpty(item.Other))
+                                                {
+                                                    <br/>@item.Other
+                                                }
+                                            }
+                                            else if (material.AssetItem.Name == "Desktop" || material.AssetItem.Name == "Laptop" || material.AssetItem.Name == "Server")
+                                            {
+                                                <span>Gen: @item.Generation</span><br/>
+                                                <span>Processor: @item.Processor</span><br/>
+                                                <span>RAM: @item.RAMCapacity GB</span><br/>
+                                                <span>HDD: @item.HardDisk</span>
+                                                @if (!string.IsNullOrEmpty(item.SSDCapacity))
+                                                {
+                                                    <br/><span>SSD: @item.SSDCapacity</span>
+                                                }
+                                                @if (!string.IsNullOrEmpty(item.Other))
+                                                {
+                                                    <br/>@item.Other
+                                                }
+                                            }
+                                        </td>
+                                        <td>@(material.BillDate.ToString("dd/MM/yyyy") ?? "-")</td>
+                                        <td>@(material.RecordDate.ToString("dd/MM/yyyy") ?? "-")</td>
+                                        <td>@(item.WarrantyDate?.ToString("dd/MM/yyyy") ?? "-")</td>
+                                        <td>
+                                            <span class="badge bg-success">@item.Status</span>
+                                        </td>
+                                </tr>
+                                i++;
+                            }
                             }
                         </tbody>
                     </table>
@@ -147,6 +255,25 @@
 @section Styles {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
     <style>
+        .dataTables_filter {
+            margin-top: 1rem;
+        }
+        
+        .dataTables_filter input {
+            width: 300px !important;
+            height: 38px;
+            padding: 0.375rem 0.75rem;
+            font-size: 1rem;
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+        }
+        
+        .dataTables_filter input:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+            outline: 0;
+        }
+
         .datepicker {
             z-index: 1060 !important;
         }
@@ -173,8 +300,25 @@
 
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
-    
+ 
+   
     <script>
+
+             function exportexcel(type, fn, dl) {
+
+        var ddd = 'Available Stock';
+        var elt = document.getElementById('availableStockTableHid');
+        console.log(elt);
+        var wb = XLSX.utils.table_to_book(elt, { sheet: "sheet1" });
+
+
+       return dl ?
+            XLSX.write(wb, { bookType: type, bookSST: true, type: 'base64' }) :
+            XLSX.writeFile(wb, fn || (ddd + '.' + (type || 'xlsx')));
+
+        // XLSX.writeFile(wb, fn || (ddd+ (type+ '.' || 'xlsx')));
+    }
+
         $(document).ready(function() {
             // Initialize datepickers
             $('input[name="receivedDateFrom"], input[name="receivedDateTo"]').datepicker({
@@ -193,7 +337,17 @@
                 order: [[0, 'desc']],
                 pageLength: 25,
                 language: {
-                    search: "Search available items:"
+                    search: "Search items:",
+                    searchPlaceholder: "Search by any field..."
+                },
+                dom: "<'row'<'col-sm-12'f>>" +
+                     "<'row'<'col-sm-12'tr>>" +
+                     "<'row'<'col-sm-5'i><'col-sm-7'p>>",
+                // Style the search box
+                initComplete: function () {
+                    $('.dataTables_filter input').addClass('form-control');
+                    $('.dataTables_filter input').attr('placeholder', 'Search by any field...');
+                    $('.dataTables_filter').addClass('mb-3');
                 }
             });
         });
