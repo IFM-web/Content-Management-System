@@ -405,7 +405,7 @@ namespace ContentManagementSystem.Controllers
 
         private void PopulateDropDowns()
         {
-            ViewBag.Companies = new SelectList(_db.Companies.Where(c => c.Id != 1).OrderBy(c => c.Name),    "Id","Name");
+            ViewBag.Companies = new SelectList(_db.Companies.Where(c => c.Id == 1).OrderBy(c => c.Name),    "Id","Name");
             ViewBag.AssetItems = new SelectList(_db.AssetItems.OrderBy(a => a.Name), "Id", "Name");
             ViewBag.Vendors = new SelectList(_db.Vendors.OrderBy(v => v.Name), "Id", "Name");
             ViewBag.Manufacturers = new SelectList(_db.Manufacturers.OrderBy(m => m.Name), "Id", "Name");
